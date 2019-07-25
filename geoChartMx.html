@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+
+<html lang="es">
+  <head>
+    <script type='text/javascript' src='https://www.google.com/jsapi'></script>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type='text/javascript'>
+    //Cargar el API de visualización y el paquete GeoChart.
+     google.load('visualization', '1', {'packages': ['geochart']});
+     //una devolución de llamada que se ejecutará cuando se carga el API de visualización de Google.
+     google.setOnLoadCallback(drawRegionsMap);
+
+    google.charts.load('current', {'packages':['table']});
+
+      function drawRegionsMap() {
+        //se instacia y se dibuja el grafico
+        var chart = new google.visualization.GeoChart(document.getElementById('chart_div'));
+
+        //Cargamos datos a arreglo de gmapData
+        var gmapData = [];
+        gmapData.push(['States', 'Estado', 'Número de Casos']);
+
+        //definimos columnas States (clave ISO), Estado (etiqueta de region), Visitantes (dato numerico a graficar)
+        for (d in regiones_ISO) {
+          gmapData.push([regiones_ISO[d].clave, regiones_ISO[d].entidad, regiones_ISO[d].cuenta])
+        }
+
+        //cargamos los datos de regiones_ISO al arreglo de gmapData
+        gmapData = google.visualization.arrayToDataTable(gmapData);
+
+
+    var options = 
+    {
+        legend: 'none', // se quita el slider indicador de poblacion minima y maxima
+        //tooltip: {trigger:'none'}, 
+        region: 'MX',   // region a dibujar en el mapa
+        resolution: 'provinces',    //
+        //displayMode: 'markers',
+        // color minimo: 'LightYellow' y color maximo: 'Salmon', igual se pueden utilizar los valor rgb.
+        colorAxis: {colors: ['#efefef', '#006eb5'] }
+    };
+    
+
+      function myClickHandler(){
+          var selection = chart.getSelection();
+          var message = '';
+          for (var i = 0; i < selection.length; i++) {
+              var item = selection[i];
+              if (item.row != null && item.column != null) {
+                  message += '{row:' + item.row + ',column:' + item.column + '}';
+              } else if (item.row != null) {
+                  message += '{row:' + item.row + '}';
+              } else if (item.column != null) {
+                  message += '{column:' + item.column + '}';
+              }
+          }
+          if (message == '') {
+              message = 'nothing';
+          }
+          alert('You selected ' + message);
+      }
+    google.visualization.events.addListener(chart, 'select', myClickHandler);
+
+            //conversion de arreglo a DataTable para google
+          chart.draw(gmapData, options);
+
+
+
+      
+        var table = new google.visualization.Table(document.getElementById('table_div'));
+
+        var tableOption = { 
+          //showRowNumber: true, 
+          width: '100%', 
+          height: '100%' ,
+          showRowNumber: true,
+          page: 'enable',
+          pageSize: 10,
+          pagingSymbols: {
+            prev: 'prev',
+            next: 'next'
+          },
+          pagingButtonsConfiguration: 'auto'
+        }
+
+        table.draw(gmapData,tableOption);
+};
+
+  var regiones_ISO = [{
+      'entidad': 'Aguascalientes',
+      'cuenta': 34500,
+      'clave': 'MX-AGU'
+    },
+    {
+      'entidad': 'Baja California',
+      'cuenta': 45600,
+      'clave': 'MX-BCN'
+    },
+    {
+      'entidad': 'Baja California Sur',
+      'cuenta': 57600,
+      'clave': 'MX-BCS'
+    },
+    {
+      'entidad': 'Campeche',
+      'cuenta': 67800,
+      'clave': 'MX-CAM'
+    },
+    {
+      'entidad': 'Chiapas',
+      'cuenta': 78900,
+      'clave': 'MX-CHP'
+    },
+    {
+      'entidad': 'Chihuaha',
+      'cuenta': 89000,
+      'clave': 'MX-CHH'
+    },
+    {
+      'entidad': 'Coahuila',
+      'cuenta': 90000,
+      'clave': 'MX-COA'
+    },
+    {
+      'entidad': 'Colima',
+      'cuenta': 90100,
+      'clave': 'MX-COL'
+    },
+    {
+      'entidad': 'Ciudad de México',
+      'cuenta': 12000,
+      'clave': 'MX-DIF'
+    },
+    {
+      'entidad': 'Durango',
+      'cuenta': 23400,
+      'clave': 'MX-DUR'
+    },
+    {
+      'entidad': 'Guanajuato',
+      'cuenta': 23450,
+      'clave': 'MX-GUA'
+    },
+    {
+      'entidad': 'Guerrero',
+      'cuenta': 34560,
+      'clave': 'MX-GRO'
+    },
+    {
+      'entidad': 'Hidalgo',
+      'cuenta': 45670,
+      'clave': 'MX-HID'
+    },
+    {
+      'entidad': 'Jalisco',
+      'cuenta': 56780,
+      'clave': 'MX-JAL'
+    },
+    {
+      'entidad': 'México',
+      'cuenta': 67890,
+      'clave': 'MX-MEX'
+    },
+    {
+      'entidad': 'Michoacán',
+      'cuenta': 78901,
+      'clave': 'MX-MIC'
+    },
+    {
+      'entidad': 'Morelos',
+      'cuenta': 89012,
+      'clave': 'MX-MOR'
+    },
+    {
+      'entidad': 'Nayarit',
+      'cuenta': 90123,
+      'clave': 'MX-NAY'
+    },
+    {
+      'entidad': 'Nuevo León',
+      'cuenta': 91234,
+      'clave': 'MX-NLE'
+    },
+    {
+      'entidad': 'Oaxaca',
+      'cuenta': 12345,
+      'clave': 'MX-OAX'
+    },
+    {
+      'entidad': 'Puebla',
+      'cuenta': 23456,
+      'clave': 'MX-PUE'
+    },
+    {
+      'entidad': 'Querétaro',
+      'cuenta': 34567,
+      'clave': 'MX-QUE'
+    },
+    {
+      'entidad': 'Qintana Roo',
+      'cuenta': 45678,
+      'clave': 'MX-ROO'
+    },
+    {
+      'entidad': 'San Luis Potosí',
+      'cuenta': 56789,
+      'clave': 'MX-SLP'
+    },
+    {
+      'entidad': 'Sinaloa',
+      'cuenta': 67890,
+      'clave': 'MX-SIN'
+    },
+    {
+      'entidad': 'Sonora',
+      'cuenta': 98765,
+      'clave': 'MX-SON'
+    },
+    {
+      'entidad': 'Tabasco',
+      'cuenta': 87654,
+      'clave': 'MX-TAB'
+    },
+    {
+      'entidad': 'Tamaulipas',
+      'cuenta': 76543,
+      'clave': 'MX-TAM'
+    },
+    {
+      'entidad': 'Tlaxcala',
+      'cuenta': 65432,
+      'clave': 'MX-TLA'
+    },
+    {
+      'entidad': 'Veracruz',
+      'cuenta': 54321,
+      'clave': 'MX-VER'
+    },
+    {
+      'entidad': 'Yucatán',
+      'cuenta': 43210,
+      'clave': 'MX-YUC'
+    },
+    {
+      'entidad': 'Zacatecas',
+      'cuenta': 32109,
+      'clave': 'MX-ZAC'
+    },
+  ]
+    </script>
+
+  </head>
+  <body>
+     <!--div donde se dibujara nuestro mapa-->
+<div class="row">
+  <div class="screen_title">
+    <div class="icono_pantalla">
+      <img src="">
+    </div>
+    <div class="titulo">
+      <span class="titulo_pan">Consulta de Informaci&oacute;n</span><br>
+      <span class="sub-titulo">Mapa de Riesgo, Gr&aacute;ficas y
+        Estad&iacute;sticas</span>
+    </div>
+  </div>
+</div>
+
+
+     
+    <div id="chart_div" style="width: 60%; height: 60%;"></div>
+    <div id="table_div"></div>
+  </body>
+</html>
