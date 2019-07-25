@@ -1,0 +1,1835 @@
+angular.module('webappApp')
+	  .controller('consultarMapaCtrl',['$scope','$rootScope','$q', '$timeout', '$http','$filter','ngTableParams','ngProgress','PAGINACION','accesoABitacoraService','INDICADORES_Y_REPORTES_MAPA_RIESGO',
+			   function ($scope,$rootScope,$q,$timeout,$http,$filter,ngTableParams,ngProgress,PAGINACION,estadosService, accesoABitacoraService, INDICADORES_Y_REPORTES_MAPA_RIESGO) {
+		  
+		  //Arreglo de valores para el filtrado de busqueda de inicia al acrgar la página
+		  $scope.showEstados = true;
+		  $scope.showMunicipios=false;
+		  $scope.showSucursales=false;
+		  var markersArray = [];
+		  $scope.casosEstados= true;
+		  $scope.casosSucursal = false;
+		  $scope.casosMunicipios= false;
+		  $scope.touched = false;
+		  $scope.viewMap = false;
+		  $scope.showError = false;
+		  $scope.FiltroBusquedaCasosEst = {};
+		  $scope.regPaginacion = PAGINACION;
+		  $scope.address = "";
+		  $scope.FiltroBusquedaCasos = {};
+		  $scope.showFrecuencia=true;
+		  $scope.registrosreelevantes = [];
+		  $scope.FiltroBusquedaCasosDet={};
+		  $scope.datosDisponibles=false;
+		  $scope.filters = {
+		  			myfiltern: '',
+		  			myfilter2 : '',	
+		  			myfilterTop:'',
+		  			myfilterProceso: '',
+		  			myfilterEstados:'',
+		  			myfilterSucursales:'',
+		  			myfilterMunicipio:''
+		  };
+		 
+		  $scope.seleccion = $scope.regPaginacion[0];
+		  var d=new Date();
+		  var year=d.getFullYear()-1;
+		  var month=d.getMonth()+1;
+		  if (month<10){
+			  month="0" + month;
+		  };
+		 
+		  var day=d.getDate();
+		  if(day<10){
+			  day="0"+day;
+		  }
+		  
+		  $scope.date1 =year + "-" + month + "-" + day;
+		  $scope.today = function() {
+	    	 $scope.date2 = new Date();
+		  };
+
+		 $scope.today();
+	     $scope.registrosInusuales=[];
+	     $scope.registrosSucursales=[];
+	     $scope.registrosMunicipios=[];
+	     $scope.listIndicadorTop=[];
+	     $scope.tipoAnalisisInusuales=true;
+	     $scope.tipoAnalisisRelevantes=false;
+	     $scope.tipoAnalisisPreocupantes=false;
+	     $scope.showChangeFrecuencia=false;
+	     $scope.datos = [];
+	     
+	     var datosAreas="";
+	     var registrosGraficaPastel=new Array();
+	     var myPieChartArea=null;
+	     $("#piechart_3d").hide();
+	     $("#series_chart_div").hide();
+	     $("#canvas").hide();
+	     $("#tabla_pastel").hide();
+	     //var labelTipoCaso='';
+	     //Mostrar gráfica de frecuencias
+	     //var labelsM = [], dataM=[];
+
+           //************************************************************************REGISTRO EN BITACORA
+        accesoABitacoraService.registra_actividad_en_bitacora(INDICADORES_Y_REPORTES_MAPA_RIESGO);
+	     
+	     //************************************************************************
+	      $scope.paginacion = true;
+		  $scope.regPaginacion  = PAGINACION;
+		  $scope.seleccion = $scope.regPaginacion[0];
+
+	      $scope.changePagination = function(){
+				$scope.tableParams.count($scope.seleccion.value);				
+	      };
+	        
+	   	 $scope.inicioPagination = function(){
+				$scope.tableParams.count($scope.seleccion.value);
+		 }
+		  
+		  $scope.procesos = [];
+		  $scope.tableParams = new ngTableParams({
+			  page: 1,
+			  count: 10,
+			  filter: $scope.filters,
+			  sorting: {
+				  numCasos: 'desc'
+					  }// count per page
+		  },{
+	        total: $scope.procesos.length, // length of data
+	        getData: function($defer, params) {
+	        	var filteredData = params.filter() ? $filter('filter')($scope.procesos, params.filter().myfilterProceso) : data;
+	        	var orderedData = params.sorting() ? $filter('orderBy')(filteredData,params.orderBy()): data;
+	        	params.total(orderedData.length);
+	        	$defer.resolve(orderedData.slice((params.page() - 1) * params.count(), params.page()* params.count()));
+	        },
+	        $scope: {$data:{}}
+		});	
+	     
+		 /* *******************************************************ESTADOS DE LA REPÚBLICA***
+		  * 	Aqui estan declarados el conjunto de cadenas que representan el poligono inicial que se carga en el 
+		  * mapa general de la república.
+		  * 
+		  * ******************************************/ 	
+	     $scope.arrayEstadosGeneral=[];
+	     $scope.arrayEstadosGeneralRespaldo=[];
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.tlaxcala);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.bajaCaliforniaNorte);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.bajaCaliforniaSur);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.sonora);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.chihuahua);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.monterrey);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.sinaloa);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.durango);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.zacatecas);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.nayarit);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.guadalajara);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.guanajuato);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.colima);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.michoacan);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.queretaro);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.hidalgo);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.tamaulipas);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.veracruz);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.aguascalientes);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.campeche);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.chiapas);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.df);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.guerrero);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.coahuila);       	
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.estadoDeMexico);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.morelos);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.oaxaca);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.puebla);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.cancun);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.sanluis);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.yucatan);
+	     $scope.arrayEstadosGeneral.push($rootScope.dataMapa.tabasco);
+	     $scope.arrayEstadosGeneralRespaldo=$scope.arrayEstadosGeneral;
+ 
+/* ******************************************************************************************************************
+ * ARREGLO DE ESTILOS PARA EL MAPA GENERAL DE LA REPÚBLICA
+ * Se define un arreglo con atributos que ofrece al API para personalizar el mapa general de la república.
+ * ******************************************************************************************************************/
+	     var styles = [];
+	     var styledMap = null;
+	     var mapDiv = null;
+	     var options = {};
+	     
+	     var poligono=[];
+
+	     //Arreglo al que se asignan cada uno de los poligonos.
+	     var miPoligono=[];
+	     var miPoligonoTemporal=[];
+	     $scope.marker=[];
+	     
+	     //Cargamos de inicio el mapa y el estilo
+	    function initmap(){
+	     styles = [{stylers: [{ hue: "#ffffff" },{ saturation: 100 },{lightness: 100}]},{featureType: "road",elementType: "labels",stylers: [{ visibility: "off" }]},{featureType: 'road',elementType: 'geometry',stylers: [{visibility: "off"}]
+	     },{featureType: 'road',elementType: 'all',stylers: [{visibility: "off"}]}];
+
+	     //Defino arreglo de estilos al mapa
+	     styledMap = new google.maps.StyledMapType(styles,{name: "Styled Map"});
+
+	     //Mapa general de la república asignado al DIV HTML
+	     document.getElementById('chart_div').style.width = "100%";
+	     mapDiv = document.getElementById('chart_div');
+	     //Opciones iniciales para el mapa general.
+	     options = {
+	    		 zoom: 5,
+	    		 panControl: false,
+	    		 rotateControl: false,
+	    		 mapTypeControl: false,
+	    		 scaleControl: true,
+	    		 streetViewControl: false,
+	    		 disableDefaultUI: false,
+	    		 zoomControl: true,
+	    		 scrollwheel: false,
+	    		 draggable: false,
+	    		 disableDoubleClickZoom: true,
+	    		 center:new google.maps.LatLng(23.966702, -102.195806),
+	    		 mapTypeId: google.maps.MapTypeId.ROADMAP
+	     };
+
+	     //Creamos mapa general, definiendo sus opciones.
+	     $scope.mapa = new google.maps.Map(mapDiv, options);
+	     //Asociar el estilo con el mapa y posteriormente visualizarlo.
+	     $scope.mapa.mapTypes.set('map_style', styledMap);
+	     $scope.mapa.setMapTypeId('map_style');
+	     
+	     //Ocultamos el div generico en el que se muestra el polígono de estado.
+	     $("#estadoZoom").hide();
+	  }
+/* ************************************************************************************************
+* FIN DE LA DEFINICIÓN DEL MAPA
+**************************************************************************************************/	
+	     /* 
+	      * Funcion para remover markers del mapa
+	      * Sets the map on all markers in the array*/       	
+	     function setMapOnAll(map) {
+	    	 for (var i = 0; i < markersArray.length; i++) {
+	    		 markersArray[i].setMap(null);
+	    	 }
+	     }
+
+	     // Removes the markers from the map, but keeps them in the array.
+	     function clearMarkers() {
+	    	 setMapOnAll(null);	
+	     }   
+	     /*Fin Funcion para remover markers*/
+
+	     
+/* ***************************************************************************************************
+ *METODO QUE MUESTRA LAS GRÁFICA PIECHART Y COLUMNA CHART PARA CADA TIPO DE TIPO ANALISIS Y FUNCIÓN PARA PERSONALIZAR EL INFOWINDOW GENERAL DE TODOS LOS NIVES DEL MAPA
+ * **********************************************************************************************************************/
+	     function initializeEstadosPricipales(pointMarker,mapa,region,totalOperaciones,totalCasos,montoAcumulado,indice) {        			
+	    	 // InfoWindow content
+	    	 var content = '<div id="iw-container">' +
+	    	 '<div class="iw-title">'+region+'</div>' +
+	    	 '<div class="iw-content">' +
+	    	 '<div class="iw-subTitle"><p>Casos Detectados <label style="font-size: 45px; color:#993895;">'+totalCasos+'</label></p></div>' +
+	    	 '<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>' +
+	    	 '<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>' +
+	    	 '<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>' +
+	    	 '<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>' +
+	    	 '<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>' +
+	    	 '<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>' +
+	    	 '<div class="iw-subTitle">Contacts</div>' +
+	    	 '</div>' +
+	    	 '<div class="iw-title-footer">Total de Casos:'+totalOperaciones+'</div>' +
+	    	 '<div class="iw-bottom-gradient"></div>' +
+	    	 '</div>';
+
+	    	 /*
+	    	  * 
+	    	  */
+	    	 // A new Info Window is created and set content
+	    	 var infowindow = new google.maps.InfoWindow({
+	    		 content: content,
+	    		 disableAutoPan: true,
+	    		 // Assign a maximum value for the width of the infowindow allows
+	    		 // greater control over the various content elements
+	    		 maxWidth: 250
+	    	 });			 	    
+
+	    	 // marker options
+	    	 $scope.marker[indice]= new google.maps.Marker({
+	    		 position: pointMarker,
+	    		 map: $scope.mapa,
+	    		 title:""
+	    	 });	
+
+	    	 if(parseInt(montoAcumulado)>=0 && parseInt(montoAcumulado)<=10000){
+	    		 $scope.marker[indice].setIcon("app/styles/iconos/pin_verde.png");  
+	    	 }else if(parseInt(montoAcumulado)>10001 && parseInt(montoAcumulado)<=100000){
+	    		 $scope.marker[indice].setIcon("app/styles/iconos/pin_amarillo.png");
+	    	 }else if(parseInt(montoAcumulado)>=100001){
+	    		 $scope.marker[indice].setIcon("app/styles/iconos/pin_rojo.png"); 
+	    	 }
+
+	    	 markersArray.push($scope.marker[indice]);
+
+	    	 // This event expects a click on a marker
+	    	 // When this event is fired the Info Window is opened.
+	    	 google.maps.event.addListener($scope.marker[indice], 'mouseover', function() {
+	    		 infowindow.open($scope.mapa,$scope.marker[indice]);
+	    	 });
+
+	    	 // Event that closes the Info Window with a click on the map
+	    	 google.maps.event.addListener($scope.marker[indice], 'mouseout', function() {
+	    		 infowindow.close();
+	    	 });		 	    
+
+	    	 // *
+	    	 // START INFOWINDOW CUSTOMIZE.
+	    	 // The google.maps.event.addListener() event expects
+	    	 // the creation of the infowindow HTML structure 'domready'
+	    	 // and before the opening of the infowindow, defined styles are applied.
+	    	 // *
+	    	 google.maps.event.addListener(infowindow, 'domready', function() {
+	    		 // Reference to the DIV that wraps the bottom of infowindow
+	    		 var iwOuter = $('.gm-style-iw');
+	    		 /* Since this div is in a position prior to .gm-div style-iw.
+	    		  * We use jQuery and create a iwBackground variable,
+	    		  * and took advantage of the existing reference .gm-style-iw for the previous div with .prev().
+	    		  */
+	    		 var iwBackground = iwOuter.prev();
+	    		 // Removes background shadow DIV
+	    		 iwBackground.children(':nth-child(2)').css({'display' : 'none'});
+	    		 // Removes white background DIV
+	    		 iwBackground.children(':nth-child(4)').css({'display' : 'none'});
+	    		 // Moves the infowindow 115px to the right.
+	    		 iwOuter.parent().parent().css({left: '60px'});
+	    		 //iwOuter.parent().parent().css({top: '160px'});
+	    		 // Moves the shadow of the arrow 76px to the left margin.
+	    		 iwBackground.children(':nth-child(1)').attr('style', function(i,s){ return s + 'left: 76px !important;'});
+	    		 // Moves the arrow 76px to the left margin.
+	    		 iwBackground.children(':nth-child(3)').attr('style', function(i,s){ return s + 'left: 76px !important;'});
+	    		 // Changes the desired tail shadow color.
+	    		 iwBackground.children(':nth-child(3)').find('div').children().css({'box-shadow': 'rgba(72, 181, 233, 0.6) 0px 1px 6px', 'z-index' : '1'});
+	    		 // Reference to the div that groups the close button elements.
+	    		 var iwCloseBtn = iwOuter.next();
+	    		 // Apply the desired effect to the close button
+	    		 iwCloseBtn.css({opacity: '1', right: '38px', top: '3px', border: '7px solid #48b5e9', 'border-radius': '13px', 'box-shadow': '0 0 5px #3990B9'});
+	    		 // If the content of infowindow not exceed the set maximum height, then the gradient is removed.
+	    		 if($('.iw-content').height() < 140){
+	    			 $('.iw-bottom-gradient').css({display: 'none'});
+	    		 }
+	    		 // The API automatically applies 0.7 opacity to the button after the mouseout event. This function reverses this event to the desired value.
+	    		 iwCloseBtn.mouseout(function(){
+	    			 $(this).css({opacity: '1'});
+	    		 });
+	    	 });	   
+	     }
+
+/* ***************************************************************************************
+ * Fin funcion dibuja El estado seleccionado
+ *****************************************************************************************/
+        	
+        	function initialize(punto,mapa,region,totalOperaciones,totalCasos,montoAcumulado,address,indice) {
+        		var geocoder = new google.maps.Geocoder();
+        		var adress1 = $scope.address;
+        		console.log("Initialize");
+        		console.log(adress1);
+        		geocoder.geocode( { 'address': adress1 }, function(results, status) {
+        			if (status == google.maps.GeocoderStatus.OK) {
+        				console.log("results");
+        				console.log(results);
+        				var latitude = results[0].geometry.location.lat();
+        				var  longitude = results[0].geometry.location.lng();
+        				//Definir punto del marker principal por estado
+        				var point = new google.maps.LatLng(latitude,longitude);	
+        				punto=point;
+
+        				// InfoWindow content
+        				var content = '<div id="iw-container">' +
+        				'<div class="iw-title">'+region+'</div>' +
+        				'<div class="iw-content">' +
+        				'<div class="iw-subTitle"><p>Casos Detectados <label style="font-size: 45px; color:#006eb5;">'+totalCasos+'</label></p></div>' +
+        				'<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>' +
+        				'<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>' +
+        				'<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>' +
+        				'<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>' +
+        				'<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>' +
+        				'<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>' +
+        				'<div class="iw-subTitle">Contacts</div>' +
+        				'</div>' +
+        				'<div class="iw-title-footer">Total de Casos:'+totalOperaciones+'</div>' +
+        				'<div class="iw-bottom-gradient"></div>' +
+        				'</div>';
+
+        				// A new Info Window is created and set content
+        				var infowindow = new google.maps.InfoWindow({
+        					content: content,
+        					disableAutoPan: true,
+        					// Assign a maximum value for the width of the infowindow allows
+        					// greater control over the various content elements
+        					maxWidth: 250
+        				});
+
+        				// marker options
+        				$scope.marker[indice] = new google.maps.Marker({
+        					position: point,
+        					map: mapa,
+        					title:""
+        				});	
+        				//markers.push($scope.marker[indice]);
+        				console.log("marker[indice]");
+        				console.log($scope.marker[indice]);
+
+        				if(parseInt(montoAcumulado)>0 && parseInt(montoAcumulado)<=10000){
+        					$scope.marker[indice].setIcon("app/styles/iconos/pin_verde.png");  
+        				}else if(parseInt(montoAcumulado)>10001 && parseInt(montoAcumulado)<=100000){
+        					$scope.marker[indice].setIcon("app/styles/iconos/pin_amarillo.png");
+        				}else if(parseInt(montoAcumulado)>=100001){
+        					$scope.marker[indice].setIcon("app/styles/iconos/pin_rojo.png"); 
+        				} 
+
+
+        				markersArray.push($scope.marker[indice]);
+                		
+                		// This event expects a click on a marker
+                		// When this event is fired the Info Window is opened.
+                		google.maps.event.addListener($scope.marker[indice], 'mouseover', function() {
+                			infowindow.open($scope.mapa,$scope.marker[indice]);
+                		});
+
+                		// Event that closes the Info Window with a click on the map
+                		google.maps.event.addListener($scope.marker[indice], 'mouseout', function() {
+                			infowindow.close();
+                		});			 	    
+
+                		// *
+                		// START INFOWINDOW CUSTOMIZE.
+                		// The google.maps.event.addListener() event expects
+                		// the creation of the infowindow HTML structure 'domready'
+                		// and before the opening of the infowindow, defined styles are applied.
+                		// *
+                		google.maps.event.addListener(infowindow, 'domready', function() {
+                			// Reference to the DIV that wraps the bottom of infowindow
+                			var iwOuter = $('.gm-style-iw');
+                			/* Since this div is in a position prior to .gm-div style-iw.
+                			 * We use jQuery and create a iwBackground variable,
+                			 * and took advantage of the existing reference .gm-style-iw for the previous div with .prev().
+                			 */
+                			var iwBackground = iwOuter.prev();
+                			// Removes background shadow DIV
+                			iwBackground.children(':nth-child(2)').css({'display' : 'none'});
+                			// Removes white background DIV
+                			iwBackground.children(':nth-child(4)').css({'display' : 'none'});
+                			// Moves the infowindow 115px to the right.
+                			iwOuter.parent().parent().css({left: '60px'});
+                			// Moves the shadow of the arrow 76px to the left margin.
+                			iwBackground.children(':nth-child(1)').attr('style', function(i,s){ return s + 'left: 76px !important;'});
+                			// Moves the arrow 76px to the left margin.
+                			iwBackground.children(':nth-child(3)').attr('style', function(i,s){ return s + 'left: 76px !important;'});
+                			// Changes the desired tail shadow color.
+                			iwBackground.children(':nth-child(3)').find('div').children().css({'box-shadow': 'rgba(72, 181, 233, 0.6) 0px 1px 6px', 'z-index' : '1'});
+                			// Reference to the div that groups the close button elements.
+                			var iwCloseBtn = iwOuter.next();
+                			// Apply the desired effect to the close button
+                			iwCloseBtn.css({opacity: '1', right: '38px', top: '3px', border: '7px solid #48b5e9', 'border-radius': '13px', 'box-shadow': '0 0 5px #3990B9'});
+                			// If the content of infowindow not exceed the set maximum height, then the gradient is removed.
+                			if($('.iw-content').height() < 140){
+                				$('.iw-bottom-gradient').css({display: 'none'});
+                			}
+                			// The API automatically applies 0.7 opacity to the button after the mouseout event. This function reverses this event to the desired value.
+                			iwCloseBtn.mouseout(function(){
+                				$(this).css({opacity: '1'});
+                			});
+        				});
+        			} else{
+        				console.log("statusgoogle.maps.GeocoderStatus.OK");
+        				console.log(status);
+        				console.log(status);
+        			}
+        		});
+        	}
+
+
+        	/* ******************************************************************************************************************
+        	 * MÉTODO PARA MOSTRAR LOS ESTADOS INICIALES
+        	 * Método que recibe como paremetros:
+        	 * -estado: conjunto de coordenadas que representan al polígono del estado.
+        	 * -mapa: varable de tipo Maps que representa el mapa de inicio.
+        	 * -latitud: latitud que define al marker de cada estado de la república.
+        	 * -longitud: longitud que define al marker de cada estado de la república.
+        	 * -tipoDeAnalisis: valor que identifica al tipo de analisis.
+        	 * -indicePoligono: número consecutivo para cada estado.
+        	 * ******************************************************************************************************************/
+        	function drawRegionsMap(estado,mapa,latitud,longitud,region,tipoDeAnalisis,indicePoligono,totalOperaciones,totalCasos,montoAcumulado) {        	
+        		var address="";
+        		//Defino cada coordenada para cada estado
+        		poligono=[];
+        		var tokens=estado.split(' ');
+        		var latLong=[];
+        		for (x=0;x<tokens.length;x++){
+        			latLong=tokens[x].split(',');
+        			poligono.push(new google.maps.LatLng(latLong[1],latLong[0]));
+        		}
+        		//Definir color en base el número de casos, tomando los valores del arreglo 
+        		var c0="#bbd6ff";
+        		var c1="#bed8ff";
+        		var c2="#b0cfff";
+        		var c3="#97bcf2";
+        		var c4="#98bdf3";
+        		var c5="#8fb4ea";
+        		var c6="#4e7dc2";
+        		var c7="#436eac";
+        		var c8="#3c629a";
+        		var c9="#385b8e";
+        		var c10="#31507c";
+        		var c11="#2b456b";
+        		var colorFinal="";
+        		if(totalCasos>=0 && totalCasos<=9){colorFinal=c0;}else
+        			if(totalCasos>=10 && totalCasos<=20){colorFinal=c1;}else 
+        				if(totalCasos>=21 && totalCasos<=40){colorFinal=c2;}else 
+        					if(totalCasos>=41 && totalCasos<=80){colorFinal=c3;}else 
+        						if(totalCasos>=81 && totalCasos<=140){colorFinal=c4;}else 
+        							if(totalCasos>=141 && totalCasos<=220){colorFinal=c5;}else 
+        								if(totalCasos>=221 && totalCasos<=260){colorFinal=c6;}else
+        									if(totalCasos>=261 && totalCasos<=340){colorFinal=c7;}else 
+        										if(totalCasos>=341 && totalCasos<=360){colorFinal=c8;}else 
+        											if(totalCasos>=361 && totalCasos<=380){colorFinal=c9;}else 
+        												if(totalCasos>=381 && totalCasos<=390){colorFinal=c10;}else
+        													if(totalCasos>=391 && totalCasos<=900){colorFinal=c10;}else
+        													if(totalCasos>=900){colorFinal=c11;}
+        		//Arreglo de poligono general
+        		miPoligono[indicePoligono] = new google.maps.Polygon({
+        			paths: poligono,
+        			strokeColor: colorFinal,
+        			strokeOpacity: 0.7,
+        			strokeWeight: 0.9,
+        			fillColor: colorFinal,
+        			fillOpacity: 0.8,
+        			indexID: region
+        		});
+        		miPoligono[indicePoligono].setMap($scope.mapa); 	 
+        		//Definir punto del marker principal por estado
+        		var point = new google.maps.LatLng(latitud,longitud);	    	    
+        		initializeEstadosPricipales(point,$scope.mapa,region,totalOperaciones,totalCasos,montoAcumulado,indicePoligono); 
+        		//Llamada al método para mostrar el nivel de estado
+        		handlerPoligono(miPoligono[indicePoligono]);
+        	}
+
+
+/* ***************************************************************************************************************************
+ * MÉTODO PARA MOSTRAR LOS ESTADOS INICIALES QUE NO TIENEN DEFINIDO UN COLOR DEGRADADO
+ * Método que recibe como paremetros:
+ * -estado: conjunto de coordenadas que representan al polígono del estado.
+ * -mapa: varable de tipo Maps que representa el mapa de inicio.
+ * -latitud: latitud que define al marker de cada estado de la república.
+ * -longitud: longitud que define al marker de cada estado de la república.
+ * -region: nombre del indentificador para definir a un estado específico.
+ * -indicePoligono: número consecutivo para cada estado.
+ * **************************************************************************************************************************/
+        	/*function drawRegionsMapTemporal(estado,mapa,region,indicePoligono) {
+        		//Defino coordenada para cada estado
+        		poligono=[];
+        		var tokens=estado.split(' ');
+        		var latLong=[];
+        		for (x=0;x<tokens.length;x++){
+        			latLong=tokens[x].split(',');
+        			poligono.push(new google.maps.LatLng(latLong[1],latLong[0]));
+        		}
+        		//Arreglo de poligono general
+        		miPoligonoTemporal[indicePoligono] = new google.maps.Polygon({
+        			paths: poligono,
+        			strokeColor: "#828282",
+        			strokeOpacity: 0.7,
+        			strokeWeight: 0.7,
+        			fillColor: "#F5F6F8",
+        			fillOpacity: 0.8,
+        			indexID: region
+        		});
+        		//Pintamos el polígono sobre el mapa
+        		miPoligonoTemporal[indicePoligono].setMap($scope.mapa);
+        	}*/
+
+			
+/* *********************************************************************************************************
+ * Funcion que borra los estados del arreglo general
+***********************************************************************************************************/
+        	function eliminarEstado(arrayEstadosGeneral,estado){
+        		for(del=0;del<arrayEstadosGeneral.length;del++){
+        			if(arrayEstadosGeneral[del]==estado){
+        				arrayEstadosGeneral.splice(del,1);
+        			}
+        		}
+        		return arrayEstadosGeneral;
+        	}        	           		
+
+/* ********************************************************************************************************
+* Pinta los estados con sus casos
+**********************************************************************************************************/
+function drawEstadosCasos(){
+	//Tomamos el nombre de cada estado para dibujarlos en el mapa
+	for(ite=0;ite<$scope.registrosInusuales.length;ite++){//totCasos
+		if($scope.registrosInusuales[ite].estado=="Aguascalientes"){
+			drawRegionsMap($rootScope.dataMapa.aguascalientes,$scope.mapa,22.019554, -102.338468,"Aguascalientes",'I',1,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.aguascalientes);			
+		}else if($scope.registrosInusuales[ite].estado=="Baja California"){
+			drawRegionsMap($rootScope.dataMapa.bajaCaliforniaNorte,$scope.mapa,31.593038, -115.415414,"Baja California",'I',2,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.bajaCaliforniaNorte);
+		}else if($scope.registrosInusuales[ite].estado=="Baja California Sur"){
+			drawRegionsMap($rootScope.dataMapa.bajaCaliforniaSur,$scope.mapa,27.352449, -112.943579,"Baja California Sur",'I',3,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.bajaCaliforniaSur);
+		}else if($scope.registrosInusuales[ite].estado=="Campeche"){
+			drawRegionsMap($rootScope.dataMapa.campeche,$scope.mapa,19.104127, -90.136395,"Campeche",'I',4,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.campeche);
+		}else if($scope.registrosInusuales[ite].estado=="Coahuila de Zaragoza"){
+			drawRegionsMap($rootScope.dataMapa.coahuila,$scope.mapa,28.822934, -101.717835,"Coahuila de Zaragoza",'I',5,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.coahuila);
+		}else if($scope.registrosInusuales[ite].estado=="Colima"){
+			drawRegionsMap($rootScope.dataMapa.colima,$scope.mapa,19.289439, -103.879917,"Colima",'I',6,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.colima);
+		}else if($scope.registrosInusuales[ite].estado=="Chiapas"){
+			drawRegionsMap($rootScope.dataMapa.chiapas,$scope.mapa,16.41,-92.408611111111,"Chiapas",'I',7,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.chiapas);
+		}else if($scope.registrosInusuales[ite].estado=="Chihuahua"){
+			drawRegionsMap($rootScope.dataMapa.chihuahua,$scope.mapa,28.814166666667,-106.43944444444,"Chihuahua",'I',8,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.chihuahua);
+		}else if($scope.registrosInusuales[ite].estado=="Ciudad de M\u00E9xico"){
+			drawRegionsMap($rootScope.dataMapa.df,$scope.mapa,19.491042, -99.127831,"Ciudad de M\u00E9xico",'I',9,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.df);
+		}else if($scope.registrosInusuales[ite].estado=="Durango"){
+			drawRegionsMap($rootScope.dataMapa.durango,$scope.mapa,25.593235, -104.712735,"Durango",'I',10,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.durango);
+		}else if($scope.registrosInusuales[ite].estado=="Guanajuato"){
+			drawRegionsMap($rootScope.dataMapa.guanajuato,$scope.mapa,21.018888888889,-101.26277777778,"Guanajuato",'I',11,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.guanajuato);
+		}else if($scope.registrosInusuales[ite].estado=="Guerrero"){
+			drawRegionsMap($rootScope.dataMapa.guerrero,$scope.mapa,17.613055555556,-99.95,"Guerrero",'I',12,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.guerrero);
+		}else if($scope.registrosInusuales[ite].estado=="Hidalgo"){
+			drawRegionsMap($rootScope.dataMapa.hidalgo,$scope.mapa,20.478333333333,-98.863611111111,"Hidalgo",'I',13,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.hidalgo);
+		}else if($scope.registrosInusuales[ite].estado=="Jalisco"){
+			drawRegionsMap($rootScope.dataMapa.guadalajara,$scope.mapa,20.566666666667,-103.67638888889,"Jalisco",'I',14,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.guadalajara);
+		}else if($scope.registrosInusuales[ite].estado=="M\u00E9xico"){
+			drawRegionsMap($rootScope.dataMapa.estadoDeMexico,$scope.mapa,19.819854, -99.605768,"Toluca",'I',15,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.estadoDeMexico);
+		}else if($scope.registrosInusuales[ite].estado=="Michoac\u00E1n de Ocampo"){
+			drawRegionsMap($rootScope.dataMapa.michoacan,$scope.mapa,19.168611111111,-101.89972222222,"Michoacan",'I',16,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.michoacan);
+		}else if($scope.registrosInusuales[ite].estado=="Morelos"){
+			drawRegionsMap($rootScope.dataMapa.morelos,$scope.mapa,18.7475,-99.070277777778,"Morelos",'I',17,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.morelos);
+		}else if($scope.registrosInusuales[ite].estado=="Nayarit"){
+			drawRegionsMap($rootScope.dataMapa.nayarit,$scope.mapa,21.743888888889,-105.22833333333,"Nayarit",'I',18,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.nayarit);
+		}else if($scope.registrosInusuales[ite].estado=="Nuevo Le\u00F3n"){
+			drawRegionsMap($rootScope.dataMapa.monterrey,$scope.mapa,25.566666666667,-99.970555555556,"Nuevo Leon",'I',19,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.monterrey);
+		}else if($scope.registrosInusuales[ite].estado=="Oaxaca"){
+			drawRegionsMap($rootScope.dataMapa.oaxaca,$scope.mapa,16.898055555556,-96.414166666667,"Oaxaca",'I',20,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.oaxaca);			
+		}else if($scope.registrosInusuales[ite].estado=="Puebla"){
+			drawRegionsMap($rootScope.dataMapa.puebla,$scope.mapa,19.003611111111,-97.888333333333,"Puebla",'I',21,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.puebla);
+		}else if($scope.registrosInusuales[ite].estado=="Quer\u00E9taro"){
+			drawRegionsMap($rootScope.dataMapa.queretaro,$scope.mapa,21.116004, -99.572805,"Quer\u00E9taro",'I',22,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.queretaro);
+		}else if($scope.registrosInusuales[ite].estado=="Quintana Roo"){
+			drawRegionsMap($rootScope.dataMapa.cancun,$scope.mapa,19.6,-87.916666666667,"Quintana Roo",'I',23,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.cancun);
+		}else if($scope.registrosInusuales[ite].estado=="San Luis Potos\u00ED"){
+			drawRegionsMap($rootScope.dataMapa.sanluis,$scope.mapa,22.603333333333,-100.42972222222,"San Luis",'I',24,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.sanluis);
+		}else if($scope.registrosInusuales[ite].estado=="Sinaloa"){
+			drawRegionsMap($rootScope.dataMapa.sinaloa,$scope.mapa,25.002777777778,-107.50277777778,"Sinaloa",'I',25,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.sinaloa);
+		}else if($scope.registrosInusuales[ite].estado=="Sonora"){
+			drawRegionsMap($rootScope.dataMapa.sonora,$scope.mapa,29.646111111111,-110.86888888889,"Sonora",'I',26,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.sonora);
+		}else if($scope.registrosInusuales[ite].estado=="Tabasco"){
+			drawRegionsMap($rootScope.dataMapa.tabasco,$scope.mapa,17.972222222222, -92.588888888889,"Tabasco",'I',27,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.tabasco);
+		}else if($scope.registrosInusuales[ite].estado=="Tamaulipas"){
+			drawRegionsMap($rootScope.dataMapa.tamaulipas,$scope.mapa,24.287222222222,-98.563333333333,"Tamaulipas",'I',28,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.tamaulipas);
+		}else if($scope.registrosInusuales[ite].estado=="Tlaxcala"){
+			drawRegionsMap($rootScope.dataMapa.tlaxcala,$scope.mapa,19.428888888889,-98.160833333333,"Tlaxcala",'I',29,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.tlaxcala);
+		}else if($scope.registrosInusuales[ite].estado=="Veracruz de Ignacio de la Llave"){
+			drawRegionsMap($rootScope.dataMapa.veracruz,$scope.mapa,19.190277777778,-96.153333333333,"Veracruz",'I',30,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.veracruz);
+		}else if($scope.registrosInusuales[ite].estado=="Yucat\u00E1n"){
+			drawRegionsMap($rootScope.dataMapa.yucatan,$scope.mapa,20.833333333333,-89,"Yucat\u00E1n",'I',31,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.yucatan);
+		}else if($scope.registrosInusuales[ite].estado=="Zacatecas"){
+			drawRegionsMap($rootScope.dataMapa.zacatecas,$scope.mapa,23.292777777778,-102.70055555556,"Zacatecas",'I',32,$scope.registrosInusuales[ite].totCasos,$scope.registrosInusuales[ite].numCasos,$scope.registrosInusuales[ite].montoTotal);
+			$scope.arrayEstadosGeneral=eliminarEstado($scope.arrayEstadosGeneral,$rootScope.dataMapa.zacatecas);
+		}
+	}
+	//Pintar el resto de los estados en los que no se encontrarón casos
+	/*for(es=0,jj=34;es<$scope.arrayEstadosGeneral.length;es++,jj++){
+		drawRegionsMapTemporal($scope.arrayEstadosGeneral[es],$scope.mapa,"",jj);
+	}*/
+}
+
+
+ /* ******************************************************************************************************************
+ * DEFINICIÓM IMPLEMENTACIÓN DE LA TABLA inusuales , relevantes , preocuopantes 
+ * *******************************************************************************************/
+	   	//Tabla Tops Para cada uno de los casos ******************************************
+		$scope.tableParamsInusualesTop = new ngTableParams({
+			page: 1,            // show first page
+			count: 10,
+			filter: $scope.filters,
+			sorting: {
+				numCasos:'asc'
+			}        
+		}, {
+			total: $scope.listIndicadorTop.length, // length of data
+			getData: function($defer, params) {
+				var filteredData = params.filter() ? $filter('filter')($scope.listIndicadorTop, params.filter().myfilterTop) : data;
+				var orderedData = params.sorting() ? $filter('orderBy')(filteredData,params.orderBy()): data;
+				params.total(orderedData.length);
+				$defer.resolve(orderedData.slice((params.page() - 1) * params.count(), params.page()* params.count()));        	
+			},
+			$scope: {$data:{}}
+		});
+		
+		$scope.$watch("listIndicadorTop", function(){
+			console.log("Top Reload");
+			$scope.tableParamsInusualesTop.reload();		
+		});	
+	   
+		/* ******************************************************************************/	   		
+	   
+	   /* ***TABLA INFORMACION DEBAJO DEL MAPA*******************************************/
+		$scope.tableParamsInusuales = new ngTableParams({
+			page: 1,            // show first page
+			count: 10,
+			filter: $scope.filters,
+			sorting: {
+				numCasos: 'desc',
+				numOperacionesCasos: 'desc',
+				montoTotal:'desc'
+			}        
+		}, {
+			total: $scope.registrosInusuales.length, // length of data
+			getData: function($defer, params) {
+				var filteredData = params.filter() ? $filter('filter')($scope.registrosInusuales, params.filter().myfilter) : data;
+				var orderedData = params.sorting() ? $filter('orderBy')(filteredData,params.orderBy()): data;
+				params.total(orderedData.length);
+				$defer.resolve(orderedData.slice((params.page() - 1) * params.count(), params.page()* params.count()));        	
+			},
+			$scope: {$data:{}}
+		});
+
+		$scope.$watch("registrosInusuales", function(){
+			console.log("registros Inusuales Reload");
+			$scope.tableParamsInusuales.reload();
+		});
+
+		$scope.inicioPagination = function(){
+			$scope.tableParamsInusuales.count($scope.seleccion.value);
+		}
+		$scope.changePagination = function(){
+			$scope.tableParamsInusuales.count($scope.seleccion.value);
+		}
+		    	
+		/* ******************************************************************************/	   	
+	
+		/* ***DATATABLE PARA SUCURSALES*******************************************/
+		    	
+		$scope.tableParamSucursales = new ngTableParams({
+			page: 1,            // show first page
+			count: 10,
+			filter: $scope.filters,
+			sorting: {
+				numCasos: 'desc'     // initial sorting
+			}// count per page        
+		}, {
+			total: $scope.registrosSucursales.length, // length of data
+			getData: function($defer, params) {
+				var filteredData = params.filter() ? $filter('filter')($scope.registrosSucursales, params.filter().myfilterSucursales) : data;
+				var orderedData = params.sorting() ? $filter('orderBy')(filteredData,params.orderBy()): data;
+				params.total(orderedData.length);
+				$defer.resolve(orderedData.slice((params.page() - 1) * params.count(), params.page()* params.count()));        	
+			},
+			$scope: {$data:{}}
+		});
+
+		$scope.$watch("registrosSucursales", function(){
+			console.log("registros registrosSucursales Reload");
+			$scope.tableParamSucursales.reload();
+		});
+		    	
+		/* ******************************************************************************/   
+		    	
+		/* ***DATATABLE PARA MUNICIPIOS*******************************************/
+		    	
+		$scope.tableParamsMunucipios = new ngTableParams({
+			page: 1,            // show first page
+			count: 10,
+			filter: $scope.filters,
+			sorting: {
+				numCasos: 'desc'     // initial sorting
+			}// count per page        
+		}, {
+			total: $scope.registrosMunicipios.length, // length of data
+			getData: function($defer, params) {
+				var filteredData = params.filter() ? $filter('filter')($scope.registrosMunicipios, params.filter().myfilterMunicipio) : data;
+				var orderedData = params.sorting() ? $filter('orderBy')(filteredData,params.orderBy()): data;
+				params.total(orderedData.length);
+				$defer.resolve(orderedData.slice((params.page() - 1) * params.count(), params.page()* params.count()));        	
+			},
+			$scope: {$data:{}}
+		});
+
+
+		$scope.$watch("registrosMunicipios", function(){
+			console.log("registros registrosSucursales Reload");
+			$scope.tableParamsMunucipios.reload();
+		});
+		
+		/* ******************************************************************************/
+		//*********************************************************************************************************************
+        function drawBars() {
+        	registrosGraficaPastel = $scope.registrosInusuales;
+        	var newDiv = document.createElement("button"); 
+        	var currentDiv = document.getElementById("visualization"); 
+        	currentDiv.appendChild(newDiv); //añade texto al div creado. 
+        	var tooltip = [];				
+    		//Definir arreglo de columnas
+    		var array_column = [{
+    			"type" : "string",
+    			"title" : "Estado"
+    		}, {
+    			"type" : "number",
+    			"title" : "Porcentaje"
+    		}
+    		];
+    		var dataArrayPie = [];
+    		//Definir arreglo de datos
+    		var array_data = new Array();
+    		array_data.push(array_column);
+    		for (var i = 0; i < registrosGraficaPastel.length; i++) {
+    			array_data.push({
+    				"label" : registrosGraficaPastel[i].estado,
+    				"value" : parseInt(registrosGraficaPastel[i].montoTotal)
+    			});		    		        
+    			tooltip.push(registrosGraficaPastel[i].estado + "-" +registrosGraficaPastel[i].numCasos);
+    		}
+    		// Create our data table.
+    		var data = [];
+    		var Header= ['',''];
+    		data.push(Header);
+
+    		var array_array_data = new Array();
+    		array_array_data.push(Header);
+    		for (i = 0; i < array_data.length; i++) {
+    			array_array_data.push([array_data[i].label, array_data[i].value]);
+    		}
+    		var dataEstados=new google.visualization.arrayToDataTable(array_array_data);
+
+            console.log(data);
+            var dr2 = ["#E2DEF0","#D9D5EB","#C7C1E4","#B2A9DA","#8476C1","#7869BA","#6E5EB2",
+    		           "#6151AB","#5842BC","#5039B5","#4029A7","#3B24A3","#30189A"];
+    		var dr7 = ["#730073","#7C177C","#903890","#582398","#6C3BA9",
+    		           "#7343AC","#7E50B5","#885CBD","#936CC4","#9C78C9","#A886D1","#B393DA","#C1A7E1"];
+    		var paleta=[];
+    		var dr6 = dr7.concat(dr2);
+            
+            var chart = new google.visualization.ChartWrapper({
+                'containerId': 'visualization',
+                'chartType': 'BarChart',
+                'dataTable': dataEstados,
+                'options': { 
+                    //width: 400,
+                    height: 312,
+                    colors : dr6,
+                    //title: 'Company Performance',
+                    vAxis: { title: 'Estados', titleTextStyle: { color: 'purple'}}
+                },
+            });
+            EnablePagination(chart, 10, document.getElementById('prevButton'), 	document.getElementById('nextButton'));
+        }
+     
+        function EnablePagination(chart, ps, prevButton, nextButton) {
+            var currentPage = -1;
+            var pageSize = ps;
+        
+            // pad the datatable to have an exact number of pages, otherwise the bars' size in the
+            // last page will be artificially increased
+            var dt = chart.getDataTable();
+            if (dt.getNumberOfRows() % pageSize != 0) {
+                for (var i = pageSize - (dt.getNumberOfRows() % pageSize); i > 0; i--) {
+                    dt.addRow(['', 0]);
+                }
+            }
+            
+            var paginate = function(dir) {
+                var numRows = chart.getDataTable().getNumberOfRows();
+                currentPage += dir;
+                var rows = [];
+                for (var i = pageSize*currentPage; i < pageSize*(currentPage+1) && i < numRows; i++) {
+                    rows.push(i);
+                }
+                chart.setView({rows: rows});
+                chart.draw();
+                currentPage == 0 ? prevButton.setAttribute('disabled', 'disabled') : prevButton.removeAttribute('disabled');
+                currentPage == numRows/pageSize-1 ? nextButton.setAttribute('disabled', 'disabled') : nextButton.removeAttribute('disabled');
+            }
+            prevButton.onclick = function() { paginate(-1) };
+            nextButton.onclick = function() { paginate(1) };
+            paginate(1);
+        }
+ 
+        /* **************************************************************
+         * Dibuja la grafica de pastel con el paginador
+         ***************************************************************/        	
+        function drawPie(){
+        	registrosGraficaPastel = $scope.registrosInusuales;
+        	var tooltip = [];				
+        	var array_column = [{
+        		"type" : "string",
+        		"title" : "Estado"
+        	}, {
+        		"type" : "number",
+        		"title" : "Porcentaje"
+        	}];
+        	var dataArrayPie = [];
+        	//Definir arreglo de datos
+        	var array_data = new Array();
+        	array_data.push(array_column);
+        	for (var i = 0; i < registrosGraficaPastel.length; i++) {
+        		if(registrosGraficaPastel[i].estado !=null){
+        			array_data.push({
+        				"label" : registrosGraficaPastel[i].estado,
+        				"value" : parseInt(registrosGraficaPastel[i].montoTotal)
+        			});		    		        
+        		}else{
+        			array_data.push({
+        				"label" : registrosGraficaPastel[i].sucursal,
+        				"value" : parseInt(registrosGraficaPastel[i].montoTotal)
+        			});	
+        		}
+
+        		tooltip.push(registrosGraficaPastel[i].estado + "-" +registrosGraficaPastel[i].numCasos);
+        	}
+        	// Create our data table.
+        	var data = [];
+        	var Header= ['',''];
+        	data.push(Header);
+
+        	var array_array_data = new Array();
+        	array_array_data.push(Header);
+        	for (i = 0; i < array_data.length; i++) {
+        		array_array_data.push([array_data[i].label, array_data[i].value]);
+        	}
+        	var dataEstados=new google.visualization.arrayToDataTable(array_array_data);
+
+        	//Definir rango de colores
+        	var dr2 = ["#E2DEF0","#D9D5EB","#C7C1E4","#B2A9DA","#8476C1","#7869BA","#6E5EB2",
+        	           "#6151AB","#5842BC","#5039B5","#4029A7","#3B24A3","#30189A"];
+        	var dr7 = ["#730073","#7C177C","#903890","#582398","#6C3BA9",
+        	           "#7343AC","#7E50B5","#885CBD","#936CC4","#9C78C9","#A886D1","#B393DA","#C1A7E1"];
+        	var paleta=[];
+        	var dr6 = dr7.concat(dr2);
+        	var options10 = {title: '',is3D: true,colors : dr6, focusTarget: 'category', tooltip: { isHtml: true ,  trigger: 'none' },chartArea: {width: "100%" ,left: "5px",top: "5px",height: "50px",width: "50px"}};//{title: '',is3D: true,colors : dr6, focusTarget: 'category', tooltip: { isHtml: true ,  trigger: 'none' },chartArea: {left: "5px",top: "5px",height: "60px",width: "600px"}};
+        	var chart9 = new google.visualization.PieChart(document.getElementById('piechart_3d'));	        
+        	var sliceid = 0;
+        	chart9.draw(dataEstados, options10);	
+        }
+
+        /* ***************************************************************************************
+         * Consultar catalogo  - llena combo estatus del caso
+         * ***************************************************************************************/
+        $http({
+        	method : "GET",
+        	url : "services/combo/getCatEstatusAnalisis"
+        }).success(function(data, status, headers,config) {
+        	console.log(data);
+        	$scope.itemsEstatus=data;
+        });
+
+        $scope.getIndicadorPep = function(){
+        	$http({
+        		method : "GET",
+        		data : {esquema:$rootScope.userVo.esquema,username: $rootScope.userVo.username,id:"TAPEP"},
+        		url : "services/combo/indicadoresAnalisisPep"
+        	}).success(function(data, status, headers,config) {
+        		console.log("data Combo indicador");
+        		console.log(data);
+        		$scope.listIndicador=data;
+        		$optionSelec = $filter('filter')($scope.listIndicador, {value:'AR'}, true);
+        		$scope.selectedIndicador=$optionSelec[0];
+        	});
+        	$scope.analisis = "PEPS"
+        }	
+
+        $scope.getIndicadorInu = function(){
+        	$http({
+        		method : "GET",
+        		data : {esquema:$rootScope.userVo.esquema,username: $rootScope.userVo.username,id:"TAINU"},
+        		url : "services/combo/indicadoresAnalisis"
+        	}).success(function(data, status, headers,config) {
+        		console.log("data Combo indicador");
+        		console.log(data);
+        		$scope.listIndicador=data;
+        		$optionSelec = $filter('filter')($scope.listIndicador, {value:'MO'}, true);
+        		$scope.selectedIndicador=$optionSelec[0];
+        	});
+        }
+
+        
+        /* ***********************************************************************************
+         * Funcion que realiza la peticion del Top 10 para los tipos de analisis
+         *************************************************************************************/
+        $scope.getTopCasos = function(){
+        	$scope.FiltroBusquedaCasos.esquema=$rootScope.userVo.esquema;
+        	$scope.FiltroBusquedaCasos.username=$rootScope.userVo.username;
+        	$scope.FiltroBusquedaCasos.tipoDeAnalisis=$scope.selectedAnalisis.value;
+        	if($scope.selectedIndicador!=undefined){
+        		$scope.FiltroBusquedaCasos.indicador = $scope.selectedIndicador.value;
+        	}
+        	if($scope.selectedEstado!=undefined){
+        		$scope.FiltroBusquedaCasos.estado = $scope.selectedEstado.value;
+        	}
+        	$scope.FiltroBusquedaCasos.fechaInicio = $scope.date1;
+        	$scope.FiltroBusquedaCasos.fechaFinal = $scope.date2;
+
+        	$http({
+        		method : "POST",
+        		data:$scope.FiltroBusquedaCasos,
+        		url : "services/consultaCasosInusuales/obtenerTopDiez"
+        	}).success(function(data, status, headers,config) {
+        		$scope.listIndicadorTop = data;
+        		$scope.tableParamsInusualesTop.reload();
+        	});	
+        }
+
+        /* ***********************************************************************************
+         * Funcion que realiza la peticion de los casos detectados.
+         * Funcion que se invoca al realizar el cambio de cualquier combo en pantalla
+         *************************************************************************************/	
+		$scope.cambiaDatosMapa = function(idvalue){
+			initmap();
+			console.log("showEstados");
+			console.log($scope.showEstados);
+			console.log("tableParamsMunucipios");
+			console.log($scope.tableParamsMunucipios);
+			console.log("tableParamSucursales");
+			console.log($scope.tableParamSucursales);
+			//invocacion
+			$scope.showTable();
+			datosAreas="";
+			if($scope.showChangeFrecuencia){
+				console.log("changeFrecuencia");
+				$scope.consultarCasosFrecuencia();	
+			}
+			$scope.getTopCasos();
+			var tipoAnalisis = $scope.selectedAnalisis.value;
+			if(tipoAnalisis=="TAPEP"){
+				$scope.getIndicadorPep();
+				$scope.analisis = "PEPS"
+			}else if(tipoAnalisis=="TAINU"){
+				$scope.getIndicadorInu();
+				$scope.analisis = "de Casos Inusuales"
+			}else if(tipoAnalisis=="TAREL"){
+				$scope.getIndicadorInu();
+				$scope.analisis = "de Casos Relevantes"
+			}else if(tipoAnalisis=="TATRI"){
+				$scope.getIndicadorInu();
+				$scope.analisis = "Transferencias Internacionales"
+			}else if(tipoAnalisis=="TAEFD"){
+				$scope.getIndicadorInu();
+				$scope.analisis = "Efectivo en Dolares"
+			}
+			//limpiarMapaCompleto(miPoligono,$scope.marker,miPoligonoTemporal);
+
+			$scope.FiltroBusquedaCasos.esquema=$rootScope.userVo.esquema;
+			$scope.FiltroBusquedaCasos.username=$rootScope.userVo.username;
+			$scope.FiltroBusquedaCasos.tipoDeAnalisis=$scope.selectedAnalisis.value;
+			
+			if($scope.selectedIndicador!=undefined){
+				$scope.FiltroBusquedaCasos.indicador = $scope.selectedIndicador.value;
+			}
+			if($scope.selectedEstado==undefined){
+				$scope.FiltroBusquedaCasos.estado =null;
+			}
+			if($scope.selectedEstado!=undefined){
+				$scope.FiltroBusquedaCasos.estado = $scope.selectedEstado.value;
+			}
+			$scope.FiltroBusquedaCasos.fechaInicio = $scope.date1;
+			$scope.FiltroBusquedaCasos.fechaFinal = $scope.date2;
+			
+			$("#loading").modal('show');
+			$http({
+				method : "POST",
+				data:$scope.FiltroBusquedaCasos,
+				url : "services/consultaCasosInusuales/obtenerCasosInusuales"
+			}).success(function(result, status, headers,config) {
+				$("#loading").modal('hide');
+				$scope.registrosInusuales=result;
+				$scope.procesos = result;
+				$scope.metacatalogos = result;
+				$scope.registrosreelevantes=result;
+				data = result;
+				$scope.tableParams.reload();//invocar el metodo para el reload d la tabla vampi
+				//Invocamos la funcion que se encarga de pintar los estados con sus casos
+				drawEstadosCasos();
+			});
+		}
+		
+		/* ***********************************************************************************
+		 * Consultar catalogo  - llena combo tipo analisis
+		 *************************************************************************************/	
+		$http({
+			method : "GET",
+			url : "services/combo/getTiposReglas"
+		}).success(function(data, status, headers,config) {
+			$scope.FiltroBusquedaCasos.esquema=$rootScope.userVo.esquema;
+			$scope.FiltroBusquedaCasos.username=$rootScope.userVo.username;
+			$scope.listAnalisis=data;
+			$optionSel = $filter('filter')($scope.listAnalisis, {value:'TAINU'}, true);
+			$scope.selectedAnalisis=$optionSel[0];
+			console.log("Tipo de analisis seleccionado para indicador");
+			console.log($scope.selectedAnalisis.value);
+			$scope.cambiaDatosMapa();
+		});
+
+		/* *****************************************************************************************
+		 * Watches para el cambio de fechas e invocacion de funcion que realiza la consulta de casos
+		 * ****************************************************************************************/			
+		//Cambio de fecha Inicial				
+		$scope.$watch('date1', function() {
+			console.log("cambio Fecha1");
+			if ($scope.date1 > $scope.date2){
+				$scope.showError = true;
+			}else{
+				$scope.showError = false;
+				$scope.cambiaDatosMapa(); 
+			}
+		});
+		//	Cambio de fecha Final
+		$scope.$watch('date2', function() {
+			console.log("cambio Fecha2");
+			if ($scope.date2 < $scope.date1){
+				$scope.showError = true;
+			}else{
+				$scope.showError = false;
+				$scope.cambiaDatosMapa();
+			}
+		});
+
+		//Watch para cambio de esquema al inicio de sesion
+		/*$scope.$watch("userVo.esquema", function(){
+			if  ($rootScope.userVo.esquema != undefined){
+				$http({
+					method : "POST",
+					data : {esquema:$rootScope.userVo.esquema,username: $rootScope.userVo.username},
+					url : "services/consultaCasosInusuales/obtenerTopDiesInusuales"
+				}).success(function(data, status, headers,config) {
+					//$scope.listIndicadorTop=data;	
+				});				
+			}
+		});*/
+  
+
+		/* ****************************************************************************************
+		 * Funciones para cada change de los combos
+		 * ***************************************************************************************/
+
+		$scope.changeDatosDetalle = function(){
+			$scope.FiltroBusquedaCasos.esquema = $rootScope.userVo.esquema;
+			$scope.FiltroBusquedaCasos.username = $rootScope.userVo.username;
+			if($scope.selectedEstado!=undefined  && $scope.selectedEstado!=null){
+				$scope.FiltroBusquedaCasos.estado = $scope.selectedEstado.value;
+			}
+			if($scope.selectedEstatus!=null){
+				$scope.FiltroBusquedaCasos.estatusDelCaso = $scope.selectedEstatus.value;
+			}
+			$scope.FiltroBusquedaCasos.fechaInicio = $scope.date1;
+			$scope.FiltroBusquedaCasos.fechaFinal = $scope.date2;
+			$scope.FiltroBusquedaCasos.tipoDeAnalisis = $scope.selectedAnalisis.value;
+			$("#loading").modal('show');
+			$http({
+				method : "POST",
+				data: $scope.FiltroBusquedaCasos,
+				url : "services/consultaCasosInusuales/obtenerCasosInusuales"
+			}).success(function(data, status, headers,config) {
+				$("#loading").modal('hide');
+				$scope.metacatalogos=data;
+				$scope.tableParams.reload();
+				$scope.registrosInusuales=data;
+				$scope.tableParamsInusuales.reload();
+			});
+		}
+			
+        //Cange Visualizar Sucursales-Municipios
+        $scope.changeVisualizar = function(){
+      	console.log("selectedVisualizar");
+      	console.log($scope.selectedVisualizar);
+      	$scope.estatus=""
+      		if($scope.selectedEstatus!=null){
+      			  $scope.estatusDelCaso = $scope.selectedEstatus.value;
+      		  }
+      	
+      	$scope.FiltroBusquedaCasosDet.esquema = $rootScope.userVo.esquema;
+			  $scope.FiltroBusquedaCasosDet.username = $rootScope.userVo.username;
+			  if($scope.selectedEstado!=null){
+				  $scope.FiltroBusquedaCasosDet.estado = $scope.selectedEstado.value;
+			  }
+			  if($scope.selectedEstatus!=null){
+				  $scope.FiltroBusquedaCasosDet.estatusDelCaso = $scope.selectedEstatus.value;
+			  }
+			  $scope.FiltroBusquedaCasosDet.fechaInicio = $scope.date1;
+			  $scope.FiltroBusquedaCasosDet.fechaFinal = $scope.date2;
+			  $scope.FiltroBusquedaCasosDet.tipoDeAnalisis = $scope.selectedAnalisis.value;
+			  //$scope.FiltroBusquedaCasosDet.estatus = $scope.selectedEstatus.value;
+			  $("#loading").modal('show');
+      	if($scope.selectedVisualizar.value=="SU"){
+      		$http({
+					method: "POST",
+					data: $scope.FiltroBusquedaCasosDet,
+					url: "services/consultaCasosInusuales/obtenerCasosEstadoSucursal"	
+				}).success(function(data, status, headers,config) {
+					$("#loading").modal('hide');
+					console.log("Correct");//invocacion vampi2 
+					$scope.showMunicipios=false;
+					$scope.showSucursales=true;
+					$scope.showEstados=false;
+					$scope.registrosSucursales=data;
+					$scope.registrosInusuales = data;
+				});
+	      	  	$scope.casosEstados= false;
+	      	  	$scope.casosMunicipios= false;
+	      	  	$scope.casosSucursal = true;
+      	}else{
+      		$http({
+					method: "POST",
+					data: $scope.FiltroBusquedaCasosDet,
+					url: "services/consultaCasosInusuales/obtenerCasosInusualesPorEstado"	
+				}).success(function(data, status, headers,config) {
+					$("#loading").modal('hide');
+					$scope.showMunicipios=true;
+					$scope.showSucursales=false;
+					$scope.showEstados=false;
+					$scope.registrosMunicipios=data;
+					$scope.registrosInusuales = data;
+					console.log("Registros Municipios - >" );
+					console.log($scope.registrosMunicipios);
+				});
+      		
+      		$scope.showMunicipios=false;
+				$scope.showSucursales=true;
+	      	  	$scope.casosEstados= false;
+	      	  	$scope.casosMunicipios= true;
+	      	  	$scope.casosSucursal = false;
+      	}
+        }		
+
+        /*Change Indicador*/
+        $scope.changeIndicador=function(){
+        	console.log("Change Indicador");
+        	$scope.cambiaDatosMapa();	
+        }
+
+
+        /* ******************************************************************************************
+         * Funcion para visualizar Grafica de frecuencia
+         * ******************************************************************************************/
+        $scope.consultarCasosFrecuencia=function(){
+        	$scope.showChangeFrecuencia=true;
+        	$("#chart_div").hide('slow');
+        	$scope.showFrecuencia=false;
+        	console.log("Change DatosDetalle");
+        	console.log($scope.selectedEstatus);
+        	$scope.FiltroBusquedaCasos.esquema = $rootScope.userVo.esquema;
+        	$scope.FiltroBusquedaCasos.username = $rootScope.userVo.username;
+        	if($scope.selectedEstado!=undefined  && $scope.selectedEstado!=null){
+        		$scope.FiltroBusquedaCasos.estado = $scope.selectedEstado.value;
+        	}
+        	if($scope.selectedEstatus!=null){
+        		$scope.FiltroBusquedaCasos.estatusDelCaso = $scope.selectedEstatus.value;
+        	}
+        	$scope.FiltroBusquedaCasos.fechaInicio = $scope.date1;
+        	$scope.FiltroBusquedaCasos.fechaFinal = $scope.date2;
+        	$scope.FiltroBusquedaCasos.tipoDeAnalisis = $scope.selectedAnalisis.value;
+        	console.log($scope.FiltroBusquedaCasos);
+        	$("#loading").modal('show');
+        	$http({
+        		method : "POST",
+        		data : $scope.FiltroBusquedaCasos,
+        		url : "services/consultaCasosInusuales/getDatosGraficaArea"
+        	}).success(function(data, status, headers,config) {
+        		$("#loading").modal('hide');
+        		console.log("data Frecuencia->");
+        		console.log(data);
+        		datosAreas = data;
+        		console.log("JSON.stringify(datos)");
+        		console.log(JSON.stringify(datosAreas));
+
+        		if(myPieChartArea!=null){
+        			myPieChartArea.destroy();
+        		}
+
+        		setTimeout(function(){
+
+        			var ctx = document.getElementById("canvas").getContext("2d");
+        			myPieChartArea = new Chart(ctx).Line(datosAreas, {
+        				responsive: true,        	
+        				showScale: true,
+        				pointDot : true
+        			});
+        		}, 1000);
+
+        		//Mostrar canvas de gráfica de frecuencias
+        		$("#canvas").show('slow');
+
+        		//Implementación para personalizar el tootltip de la gráfica de frecuencias
+        		Chart.defaults.global.pointHitDetectionRadius = 1;
+        	});
+        	$scope.viewMap=true;
+        }
+
+
+        /* ********************************************************************************
+         * Métodos para mostrar y ocultar graficas
+         * ********************************************************************************/					
+        //Mostrar gráfica de pastel
+        $scope.showGraficaPastel=function(){
+        	console.log("Mostrando pie...");
+        	$scope.combosGraficaPieChart=true;
+        	$scope.combosGraficaColumnchart=false;
+        	$("#tabla_pieBar").show();
+        	$("#piechart_3d").show();
+        	$("#series_chart_div").hide();
+        	drawPie();
+		}
+        
+		//Mostrar gráfica de barras
+		$scope.showGraficaBarras=function(){
+			console.log("Mostrando Barras...");
+			$scope.combosGraficaPieChart=false;
+			$scope.combosGraficaColumnchart=true;
+			$("#tabla_pieBar").show();
+			$("#piechart_3d").hide();
+			$("#series_chart_div").show();
+			drawBars();
+		}
+		//Visualizar unicamente la tabla con datos
+		$scope.showTable=function(){
+			//Ocultar la de pastel
+			$("#tabla_pieBar").hide();
+			$("#piechart_3d").hide();
+			$("#series_chart_div").hide();
+		}
+				
+/* *********************************************************************************************************************
+ * Método para formar el polígono de estado encargado de dibujar el estado en el mapa de la republica
+ * @param poligono: arreglo que define cada uno de los municipios correspondientes a cada estado
+ * @param lat: 
+ * @param lon
+ * @param drill
+ ***********************************************************************************************************************/				
+		function cargarMapaEstado(poligono,lat,lon,drill,claveEstado){
+			console.log("Cargar Mapa estado");
+			// Create an array of styles.
+			var styles = [
+			              {
+			            	  stylers: [
+			            	            { hue: "#ffffff" },
+			            	            { saturation: 100 },
+			            	            {lightness: 100}
+			            	            ]
+			              },{
+			            	  featureType: "road",
+			            	  elementType: "labels",
+			            	  stylers: [
+			            	            { visibility: "off" }
+			            	            ]
+			              },
+			              {
+			            	  featureType: 'road',
+			            	  elementType: 'geometry',
+			            	  stylers: [
+			            	            {visibility: "off"}
+			            	            ]
+			              },
+			              {
+			            	  featureType: 'road',
+			            	  elementType: 'all',
+			            	  stylers: [
+			            	            {visibility: "off"}
+			            	            ]
+			              }
+			              ];
+
+			//Defino arreglo de estilos
+			var styledMap = new google.maps.StyledMapType(styles,{name: "Styled Map"});
+			//Mapa general de la república
+			var centro = new google.maps.LatLng(lat,lon);
+			var optionsEstado = {
+					zoom: 6,
+					panControl: false,
+					rotateControl: false,
+					mapTypeControl: false,
+					scaleControl: false,
+					disableDefaultUI: true,
+					zoomControl: false,
+					scrollwheel: false,
+					draggable: false,
+					disableDoubleClickZoom: true,
+					center: centro,
+					mapTypeId: google.maps.MapTypeId.ROADMAP
+			};
+			
+			
+			/*
+	    		 zoom: 5,
+	    		 panControl: false,
+	    		 rotateControl: false,
+	    		 mapTypeControl: false,
+	    		 scaleControl: false,
+	    		 streetViewControl: false,
+	    		 disableDefaultUI: false,
+	    		 zoomControl: false,
+	    		 scrollwheel: false,
+	    		 draggable: false,
+	    		 disableDoubleClickZoom: true,
+	    		 center:new google.maps.LatLng(23.966702, -102.195806),
+	    		 mapTypeId: google.maps.MapTypeId.ROADMAP
+			 */
+			
+			
+			document.getElementById("estadoZoom").innerHTML = "";
+			
+			var mapaEstadoZoom = new google.maps.Map(document.getElementById('estadoZoom'), optionsEstado);  	
+			//Associate the styled map with the MapTypeId and set it to display.
+			mapaEstadoZoom.mapTypes.set('map_style', styledMap);
+			mapaEstadoZoom.setMapTypeId('map_style');
+			poligonoIndividual(poligono,mapaEstadoZoom,lat,lon,claveEstado);
+		}
+        
+/* *********************************************************************************************************************
+* Método para plasmar independientemente cada municipio del estado(aqui voy a definir el rango de colores para cada poligono)
+* **********************************************************************************************************************/
+		function poligonoIndividual(municipio,mapPorEstado,lat,lon,claveEstado){
+			console.log("Poligono Individual");
+			poligono=[];
+			var tokens=municipio.split(' ');
+			var latLong=[];
+			var pubicacionMarker=[];
+			for (x=0;x<tokens.length;x++){
+				latLong=tokens[x].split(',');	        			
+				//Creamos poligono
+				poligono.push(new google.maps.LatLng(latLong[1],latLong[0]));
+			}
+			//Variable miPoligonoEstado al que se le asigna el poligono de un estado. 
+
+			miPoligonoEstado = new google.maps.Polygon({
+				paths: poligono,
+				strokeColor: "#F5F6F8",
+				strokeOpacity: 0.8,
+				strokeWeight: 0.7,
+				fillColor: "#5F3A97",
+				fillOpacity: 0.8/*,
+	        	  indexID: i*/	        	  
+			});	
+
+			//Se traza el poligono sobre el mapa de estados
+			miPoligonoEstado.setMap(mapPorEstado);	
+			//Tomar un punto para definir el marker
+			pubicacionMarker=tokens[1].split(' ');	
+			//Definir punto del marker principal por estado
+			var point = new google.maps.LatLng(lat,lon);
+
+			handlerPoligonoEstado(mapPorEstado,claveEstado);
+		}        	        
+	        
+/* ******************************************************************************************************************
+ * EVENTTO HANDLER PARA EL POLÍGONO
+ * *****************************************************************************************************************/
+	        function handlerPoligonoEstado(mapPorEstado,claveEstado){     
+	        	console.log("HandlerPoligonoEstado");
+	        	console.log(mapPorEstado);
+	        	console.log(claveEstado);
+	        	$scope.listaMunicipios={};
+	        	var estadoPrincipla='';
+	        	$http({
+	        		method : "POST",
+	        		data:{
+	        			esquema:$rootScope.userVo.esquema,
+	        			username: $rootScope.userVo.username,
+	        			estado:$scope.selectedEstado.value,
+	        			tipoDeAnalisis:$scope.selectedAnalisis.value,
+	        			fechaInicio:$scope.date1,
+	        			fechaFinal:$scope.date2},
+	        			url : "services/consultaCasosInusuales/obtenerCasosInusualesPorEstado"	
+	        	}).success(function(data, status, headers,config) {
+	        		$("#loading").modal('hide');
+	        		$scope.listaMunicipios=data;	
+	        		estadoPrincipla=$scope.listaMunicipios[0].estado;
+	        		for(i=0;i<$scope.listaMunicipios.length;i++){
+	        			$scope.address = $scope.listaMunicipios[i].municipio+','+estadoPrincipla;
+	        			var point=0;
+	        			var mp=$scope.listaMunicipios[i].municipio;
+	        			var numOperaciones=$scope.listaMunicipios[i].numOperaciones;//cambio numOperaciones
+	        			var numCasos=$scope.listaMunicipios[i].numCasos;
+	        			var montoTotal=$scope.listaMunicipios[i].montoTotal;
+	        			console.log(estadoPrincipla+"-"+mp+"-"+numOperaciones+"-"+numCasos+"-"+montoTotal);
+
+	        			console.log("Invocando Geocoder");
+	        			var geocoder = new google.maps.Geocoder();
+	        			initialize(point,mapPorEstado,mp,numOperaciones,numCasos,montoTotal,$scope.address,i);
+	        			//Limpiamos campos
+	        			mp='';
+	        			numOperaciones='';
+	        			numCasos='';
+	        			montoTotal='';
+	        		}
+	        		console.log("Resultado success---->");
+	        		console.log(data);
+	        		$scope.registrosInusuales=data;
+	        		$scope.tableParamsInusuales.reload();
+	        		//Limpiar polígonos
+	        		//limpiarMapaCompleto(miPoligono,$scope.marker,miPoligonoTemporal);
+	        	}); 
+	        }
+	        
+		        
+/* **********************************************************************************************
+ * Funcion para cambio en el combo de estados, se invoca cuando se hace el cambio en el combo estados
+ * *********************************************************************************************/
+	        $scope.changeEstado = function(estado){
+	        	document.getElementById("estadoZoom").innerHTML = "";
+
+	        	console.log("change Estado function->");
+	        	console.log(estado);
+				console.log("showEstados");
+				console.log($scope.showEstados);
+				console.log("tableParamsMunucipios");
+				console.log($scope.tableParamsMunucipios);
+				console.log("tableParamSucursales");
+				console.log($scope.tableParamSucursales);
+				
+	        	
+	        	
+	        	
+	        	$scope.viewMap=true;
+	        	console.log($scope.touched);
+	        	$scope.showFrecuencia=false;
+	        	document.getElementById('canvas').style.display = "none";
+	        	if($scope.selectedEstado!=undefined){
+	        		//Invocamos la funcion para sustituir el mapa por el estado selecionado
+	        		if($scope.touched){
+	        			changeEstadoMapa(estado.label);
+	            		$optionSel = $filter('filter')($scope.listEstados, {label:estado.label}, true);
+	            		$scope.selectedEstado=$optionSel[0];
+	        			$scope.touched=false;
+	        		}else{
+	        			changeEstadoMapa(estado);
+	        		}
+	        		
+	        		$http({
+	        			method : "GET",
+	        			url : "services/combo/visualizarEstados"
+	        		}).success(function(data, status, headers,config) {
+	        			console.log(">>>data<<<");
+	        			console.log(data);
+	        			$scope.itmVisualizarEstado=data;
+	        			$optionSel = $filter('filter')($scope.itmVisualizarEstado, {value:'MU'}, true);
+	        			$scope.selectedVisualizar=$optionSel[0];
+	        			//Scope para visualizar municipios o sucursales en la tabla
+	        			$scope.estadosView = true;
+	        			$scope.casosEstados= false;
+	        			$scope.casosMunicipios= true;
+	        			$scope.casosSucursal = false;
+	        			//invocacion refresh munnicipios 
+	        			$scope.changeVisualizar();
+	        		});
+	        		//Invocamos la funcion para peticion de datos del estado
+	        	}else{
+	        		$scope.FiltroBusquedaCasos.estado = undefined;
+	        		$scope.regresarMapa();
+	        	}
+	        };
+			          
+			          
+			          
+			          $scope.FiltroBusquedaCasosDet={};
+			         
+
+			           
+			          
+			    function changeEstadoMapa(estado){
+			    	console.log("-----Change Estado Mapasasd----");
+			    	console.log(estado);
+			    	console.log("-----Change Estado Mapa----");
+			    	$("#loading").modal('show');
+			    	if(estado=='Aguascalientes'){
+			    		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+    	                setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.aguascalientes,22.019554, -102.338468,7,'01');},1000);
+			    	}else if(estado=='Ciudad de M\u00E9xico'){
+			    		console.log("Cuidad...mex");
+			    		$("#estadoZoom").show('slow');
+			    		$("#chart_div").hide('slow');
+			    		setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.df,19.491042, -99.127831,7,'01');},1000);
+			    	}else if(estado=='Jalisco'){
+			    		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+    	                setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.guadalajara,20.566666666667, -103.67638888889,7,'01');},1000);
+			    	}else if(estado=='Nayarit'){
+			    		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');	
+    	                setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.nayarit,21.743888888889,-105.22833333333,7,'01');},1000);
+			    	}else if(estado=='Quer\u00E9taro'){
+			    		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+    	                setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.queretaro,21.116004, -99.572805,7,'01');},1000);
+			    	}else if(estado=='Quintana Roo'){
+			    		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+    	                setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.cancun,19.6,-87.916666666667,7,'01');},1000);
+			    	}else if(estado=='San Luis Potos\u00ED'){
+			    		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+    	                setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.sanluis,22.603333333333,-100.42972222222,7,'01');},1000);
+			    	}else if(estado=='Tamaulipas'){
+			    		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+    	                setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.tamaulipas,24.287222222222,-98.563333333333,7,'01');},1000);
+			    	}else if(estado=='Tlaxcala'){
+			    		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+    	                setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.tlaxcala,19.428888888889,-98.160833333333,7,'01');},1000);
+			    	}else if(estado=='Veracruz de Ignacio de la Llave'){
+			    		$("#estadoZoom").show('slow');
+			    		$("#chart_div").hide('slow');
+			    		setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.veracruz,19.190277777778,-96.153333333333,7,'01');},1000);
+			    	}else if(estado=='Yucat\u00E1n'){
+			    		$("#estadoZoom").show('slow');
+			    		$("#chart_div").hide('slow');
+			    		setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.yucatan,20.833333333333,-89,7,'01');},1000);
+			    	}else if(estado=='Baja California Sur'){
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+    	                setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.bajaCaliforniaSur,25.391565, -111.775249,7,'02');},1000);
+                	}else if(estado=='Baja California'){
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+    	                setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.bajaCaliforniaNorte,30.241397, -115.285381,7,'03');},1000);
+                	}else if(estado=='Sonora'){
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+    	                setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.sonora,29.163193, -110.361707,7,'26');},1000);
+                	}else if(estado=='Sinaloa'){
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+                        setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.sinaloa,24.269908, -106.969270,7,'25');},1000);            		 	            		
+                	}else if(estado=='Chihuahua'){
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+                        setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.chihuahua,28.624548, -106.505506,7,'08');},1000);	            		
+                	}else if(estado=='Durango'){
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+                        setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.durango,24.258298, -105.010274,7,'10');},1000);            		           		
+                	}else if(estado=='Coahuila de Zaragoza'){
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+                        setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.coahuila,27.480253, -101.228943,7,'05');},1000);            				            		
+                	}else if(estado=='Zacatecas'){
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+                        setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.zacatecas,23.421699, -102.767655,7,'32');},1000);            		
+                	}else if(estado=='Nayarit'){
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+                        setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.nayarit,25.714607, -105.442611,7,'18');},1000);
+                	}else if(estado=='Guadalajara'){
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+                        setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.jalisco,20.994560, -103.701546,7,'14');},1000);            		
+                	}else if(estado=='Guanajuato'){
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+                        setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.guanajuato,21.256690, -101.208264,7,'11');},1000);            		
+                	}else if(estado=='"Querétaro"'){
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+                        setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.queretaro,21.046438, -99.679732,7,'22');},1000); 	            		
+                	}else if(estado=='Hidalgo'){
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+                        setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.hidalgo,21.011121, -99.037470,8,'13');},1000);
+                	}else if(estado=='Veracruz'){
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+                        setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.veracruz,19.194736, -96.175129,7,'30');},1000);
+                	}else if(estado=='Puebla'){
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+                        setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.puebla,18.930088, -97.878363,7,'21');},1000);        		
+                	}else if(estado=='Morelos'){
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+                        setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.morelos,18.770399, -99.077413,10,'17');},1000);  	            		
+                	}else if(estado=='Aguascalientes'){
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+                        setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.aguascalientes,22.066360, -102.277841,7,'01');},1000); 
+                	}else if(estado=='Tamapulipas'){
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+                        setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.tamapulipas,25.349810, -97.993901,7,'28');},1000); 
+                	}else if(estado=='M\u00E9xico'){
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+                        setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.estadoDeMexico,19.216216, -99.706602,7,'15');},1000);            		
+                	}else if(estado=='Guerrero'){
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+                        setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.guerrero,18.051628, -100.180958,8,'12');},1000);   	            		
+                	}else if(estado=='Oaxaca'){
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+                    setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.oaxaca,17.008558, -96.690719,7,'');},1000);	  	            		
+                	}else if(estado=='Colima'){
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+                    setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.colima,19.253988, -103.974483,8,'');},1000);	   	            		
+                	}else if(estado=='Distrito Federal'){
+            	   		$("#estadoZoom").show('slow');
+        	   			$("#chart_div").hide('slow');
+        	   		setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.df,19.387495, -99.127476,11,'');},1000);	 	            	
+                	}else if(estado=='Chiapas'){
+            	   		$("#estadoZoom").show('slow');
+        	   			$("#chart_div").hide('slow');
+        	   		setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.chiapas,17.025885, -92.573288,8,'');},1000);		            	
+                	}else if(estado=='Campeche'){
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+                        setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.campeche,19.377244, -90.110887,7,'');},1000);   		            	
+                	}else if(estado=='MX-ROO'){
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+                        setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.cancun,20.205451, -87.899196,7,'');},1000); 		            	
+                	}else if(estado=='Nuevo Le\u00f3n'){
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+                        setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.monterrey,25.126920, -99.594165,7,'');},1000);          		
+                	}else if(estado=='Tlaxcala'){
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+                        setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.tlaxcala,19.561990, -98.201251,8,'');},1000);            		
+                	}else if(estado=='MX-SLP'){
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+                        setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.sanluis,22.160435, -101.041514,7,'');},1000); 
+                	}else if(estado=='Yucatan'){
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+                        setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.yucatan,20.998521, -88.791543,8,'');},1000); 
+                	}else if(estado=='Michoac\u00e1n de Ocampo'){
+                		console.log("Michoacan ...function");
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+                        setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.michoacan,19.263666, -102.010443,7,'');},1000);
+                	}else if(estado=='Tabasco'){
+            	   		$("#estadoZoom").show('slow');
+            	   		$("#chart_div").hide('slow');
+                        setTimeout(function(){cargarMapaEstado($rootScope.dataMapa.tabasco,18.211691, -93.428035,7,'');},1000);
+                	}
+			    }
+			      
+			    
+			    /**Funcion para el evento del click en el mapa al seleccionar un estado hace el zoom*/
+	        	function handlerPoligono(miPoligono){//Handle poligono
+	                	google.maps.event.addListener(miPoligono, 'click', function (event) {
+			        		if($scope.selectedEstado==null){
+			        			console.log("Estados Null");
+			        			console.log($scope.listEstados);
+			        			var dat = $scope.listEstados;
+			        			$scope.selectedEstado={
+			        					"label":"",
+			        					"value":""
+			        			};
+			        			for(var i=0; i<dat.length;i++){
+			        				var d1=$scope.listEstados[i].value;
+			        				var d2=$scope.listEstados[i].label;
+			        				if($scope.listEstados[i].label==miPoligono.indexID){
+			        					console.log("$scope.listEstados[i]");	
+				        				console.log(d1);	
+				        				console.log(d2);
+			        					$scope.selectedEstado.value=d1;
+			        					$scope.selectedEstado.label=d2;
+			        					//$scope.changeEstado(d2);
+			        					$scope.touched = true;
+			        					$scope.changeEstado($scope.selectedEstado);
+			        				}
+			        			}
+			        		}
+	                	});
+	               }
+/*****************************************************************************************************/ 
+	        	
+/**********************Llamada a los estados general de la república mexicana***************************/	        
+	        //Regresar al mapa original DE LA REPÚBLICA
+	        var show = 0;
+        	$scope.regresarMapa = function (){
+        		$scope.showChangeFrecuencia=false;
+        		$scope.showFrecuencia = true;
+        		$("#chart_div").show('slow');
+        		$scope.mapa.setZoom(5);
+        		$("#estadoZoom").hide('slow');
+        		$("#canvas").hide('slow');
+        		$optionSel = $filter('filter')($scope.listEstados, {value:undefined}, true);
+        		$scope.selectedEstado=$optionSel[0];
+        		$scope.selectedEstado=undefined;
+        		$scope.cambiaDatosMapa();
+        		$scope.showEstados=true;
+        		$scope.showMunicipios=false;
+        		$scope.showSucursales=false;
+	        	$scope.estadosView = false;	
+	        	$scope.casosEstados= true;
+	           	$scope.casosSucursal = false;
+	           	$scope.casosMunicipios= false;
+	           	$scope.viewMap=false;
+        	}
+					
+	        
+/***********************CONSULTA DE ENTIDADES*************************************/
+        	function limpiarMapaCompleto(miPoligono,marker,miPoligonoTemporal){
+						//Limpiar poligonos estados con casos
+						for(var i=1;i<miPoligono.length;i++){
+							miPoligono[i] = new google.maps.Polygon({
+			        			paths: poligono,
+			        			strokeColor: "c0",
+			        			strokeOpacity: 0.7,
+			        			strokeWeight: 0.9,
+			        			fillColor: "c0",
+			        			fillOpacity: 0.8,
+			        			indexID: ""});
+							
+							miPoligono[i].setMap($scope.mapa);
+							miPoligono[i].setMap($scope.mapa);
+							//Limpiar Markers
+							clearMarkers();
+						}
+						//Limpiar poligonos estados sin casos
+						for(jj=34;jj<miPoligonoTemporal.length;jj++){
+							miPoligonoTemporal[jj].setMap(null);
+						}
+		          }
+		          
+		          
+		          //Consultar estados
+					$http({
+						method : "GET",
+						url : "services/combo/getCatEntidad"
+					}).success(function(data, status, headers,config) {
+							$scope.listEstados=data;					
+							$scope.registro=$scope.estados;
+							$scope.tableParams.reload();					
+					});	
+					
+	  }]);  
