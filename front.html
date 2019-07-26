@@ -1,0 +1,61 @@
+<head>
+<style>
+    .tooltip {
+        position: relative;
+        display: block;
+    }
+    .tooltip .tooltiptext {
+        visibility: hidden;
+        width: 350px;
+        background-color: black;
+        color: green;
+        text-align: left;
+        border-radius: 6px;
+        padding: 5px;
+        top: -5px;
+        left: 90%;
+
+        /* Position the tooltip */
+        position: absolute;
+        z-index: 2147483640;
+    }
+
+    .tooltip:hover .tooltiptext {
+        visibility: visible;
+    }
+
+
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    padding: 12px 16px;
+    font-size:12px;
+}
+
+.dropdown:hover .dropdown-content {
+    display: block;
+    z-index: 2147483647;
+}   
+</style>
+</head>
+<body>
+<div id="legend" style="position: fixed; left: 0; top: 0;">
+
+</div>
+<br>
+<div style="width: 920px; height: 600px; margin: auto; border: 2px solid #a3c3f7; border-radius: 20px;padding:20px;  z-index: -100000;">
+    <div id="C05" style="width: 900px; height: 570px; margin: auto;"></div>
+</div>
+<script>
+        document.getElementById("legend").innerHTML = "<div class=\"dropdown\""><b>LPT LEGEND</b><div class=\"dropdown-content\"><p>0100blahblahblah</p></div></div>";
+</script>
+</body>
+</html>

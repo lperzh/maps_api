@@ -1,0 +1,47 @@
+.modal-vertical-centered {
+  transform: translate(0, 50%) !important;
+  -ms-transform: translate(0, 50%) !important; /* IE 9 */
+  -webkit-transform: translate(0, 50%) !important; /* Safari and Chrome */
+}
+.pointer{
+	cursor: pointer;
+}
+
+.image{
+		background: url("images/icono_calendario.png");
+		width: 18px;
+		height: 20px;
+		margin-top: -20;
+}
+
+.mainwebapp{
+	min-width: 768px;
+}
+
+body{
+	min-width: 768px;
+}
+
+
+.modal-loading {
+	text-align: center;
+  transform: translate(0, 50%) !important;
+  -ms-transform: translate(0, 50%) !important; /* IE 9 */
+  -webkit-transform: translate(0, 50%) !important; /* Safari and Chrome */
+}
+
+/* clase para los filtros de busqueda*/
+ .form-filtros-busqueda .form-group{
+    margin-bottom: 0px !important;
+    height: 42px !important;
+ }
+
+ .form-filtros-busqueda .row >div {
+    padding-left: 15px !important;
+    padding-right: 15px !important;
+ }
+
+ .header-modal{
+	border-bottom: 0;
+	background-color: #025388;
+}

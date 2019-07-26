@@ -4,13 +4,18 @@
   <head>
     <script type='text/javascript' src='https://www.google.com/jsapi'></script>
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd" crossorigin="anonymous"></script>
     <script type='text/javascript'>
     //Cargar el API de visualización y el paquete GeoChart.
      google.load('visualization', '1', {'packages': ['geochart']});
      //una devolución de llamada que se ejecutará cuando se carga el API de visualización de Google.
      google.setOnLoadCallback(drawRegionsMap);
 
-    google.charts.load('current', {'packages':['table']});
+     google.charts.load('current', {'packages':['table']});
+     
+     google.charts.load('current', {'packages':['corechart']});
+     
 
       function drawRegionsMap() {
         //se instacia y se dibuja el grafico
@@ -18,51 +23,60 @@
 
         //Cargamos datos a arreglo de gmapData
         var gmapData = [];
+        var dataPie = [];
         gmapData.push(['States', 'Estado', 'Número de Casos']);
-
+        dataPie.push(['Estado', 'Número de Casos']);
         //definimos columnas States (clave ISO), Estado (etiqueta de region), Visitantes (dato numerico a graficar)
         for (d in regiones_ISO) {
           gmapData.push([regiones_ISO[d].clave, regiones_ISO[d].entidad, regiones_ISO[d].cuenta])
+          if(regiones_ISO[d].cuenta > 0){
+            dataPie.push([regiones_ISO[d].entidad, regiones_ISO[d].cuenta])
+          }
         }
 
         //cargamos los datos de regiones_ISO al arreglo de gmapData
         gmapData = google.visualization.arrayToDataTable(gmapData);
+        dataPie = google.visualization.arrayToDataTable(dataPie);
 
 
-    var options = 
-    {
-        legend: 'none', // se quita el slider indicador de poblacion minima y maxima
-        //tooltip: {trigger:'none'}, 
-        region: 'MX',   // region a dibujar en el mapa
-        resolution: 'provinces',    //
-        //displayMode: 'markers',
-        // color minimo: 'LightYellow' y color maximo: 'Salmon', igual se pueden utilizar los valor rgb.
-        colorAxis: {colors: ['#efefef', '#006eb5'] }
-    };
+        var options = 
+        {
+            legend: 'none', // se quita el slider indicador de poblacion minima y maxima
+            //tooltip: {trigger:'none'}, 
+            region: 'MX',   // region a dibujar en el mapa
+            resolution: 'provinces',    //
+            //displayMode: 'markers',
+            // color minimo: 'LightYellow' y color maximo: 'Salmon', igual se pueden utilizar los valor rgb.
+            colorAxis: {colors: ['#efefef', '#006eb5'] }
+        };
     
 
-      function myClickHandler(){
-          var selection = chart.getSelection();
-          var message = '';
-          for (var i = 0; i < selection.length; i++) {
-              var item = selection[i];
-              if (item.row != null && item.column != null) {
-                  message += '{row:' + item.row + ',column:' + item.column + '}';
-              } else if (item.row != null) {
-                  message += '{row:' + item.row + '}';
-              } else if (item.column != null) {
-                  message += '{column:' + item.column + '}';
-              }
-          }
-          if (message == '') {
-              message = 'nothing';
-          }
-          alert('You selected ' + message);
-      }
-    google.visualization.events.addListener(chart, 'select', myClickHandler);
+        function myClickHandler(){
+            var selection = chart.getSelection();
+            var message = '';
+            for (var i = 0; i < selection.length; i++) {
+                var item = selection[i];
+                if (item.row != null && item.column != null) {
+                    message += '{row:' + item.row + ',column:' + item.column + '}';
+                } else if (item.row != null) {
+                    message += '{row:' + item.row + '}';
+                } else if (item.column != null) {
+                    message += '{column:' + item.column + '}';
+                }
+            }
+            if (message == '') {
+                message = 'nothing';
+            }
+            alert('You selected ' + message);
+        }
+          google.visualization.events.addListener(chart, 'select', myClickHandler);
 
             //conversion de arreglo a DataTable para google
           chart.draw(gmapData, options);
+
+
+
+
 
 
 
@@ -84,21 +98,49 @@
         }
 
         table.draw(gmapData,tableOption);
+
+      
+
+
+        var optionsPie = {
+          //title: 'Número de Casos',
+          is3D: true,
+          slices: {  4: {offset: 0.2},
+                    12: {offset: 0.3},
+                    14: {offset: 0.4},
+                    15: {offset: 0.5},
+          },
+          colors: ['#efefef', '#d0dee7','#74acd1','#187bbb', '#006eb5'],
+          chartArea:{
+                left:10,
+                right:10, // !!! works !!!
+                bottom:20,  // !!! works !!!
+                top:20,
+                width:"100%",
+                height:"100%"
+          },
+          legend: 'none'
+        };
+
+
+        var chart = new google.visualization.PieChart(document.getElementById('piechart'));
+
+        chart.draw(dataPie, optionsPie);
 };
 
   var regiones_ISO = [{
       'entidad': 'Aguascalientes',
-      'cuenta': 34500,
+      'cuenta': 0,
       'clave': 'MX-AGU'
     },
     {
       'entidad': 'Baja California',
-      'cuenta': 45600,
+      'cuenta': 1000,
       'clave': 'MX-BCN'
     },
     {
       'entidad': 'Baja California Sur',
-      'cuenta': 57600,
+      'cuenta': 0,
       'clave': 'MX-BCS'
     },
     {
@@ -108,12 +150,12 @@
     },
     {
       'entidad': 'Chiapas',
-      'cuenta': 78900,
+      'cuenta': 0,
       'clave': 'MX-CHP'
     },
     {
       'entidad': 'Chihuaha',
-      'cuenta': 89000,
+      'cuenta': 0,
       'clave': 'MX-CHH'
     },
     {
@@ -138,7 +180,7 @@
     },
     {
       'entidad': 'Guanajuato',
-      'cuenta': 23450,
+      'cuenta': 0,
       'clave': 'MX-GUA'
     },
     {
@@ -148,12 +190,12 @@
     },
     {
       'entidad': 'Hidalgo',
-      'cuenta': 45670,
+      'cuenta': 0,
       'clave': 'MX-HID'
     },
     {
       'entidad': 'Jalisco',
-      'cuenta': 56780,
+      'cuenta': 0,
       'clave': 'MX-JAL'
     },
     {
@@ -168,7 +210,7 @@
     },
     {
       'entidad': 'Morelos',
-      'cuenta': 89012,
+      'cuenta': 0,
       'clave': 'MX-MOR'
     },
     {
@@ -213,7 +255,7 @@
     },
     {
       'entidad': 'Sonora',
-      'cuenta': 98765,
+      'cuenta': 0,
       'clave': 'MX-SON'
     },
     {
@@ -248,26 +290,85 @@
     },
   ]
     </script>
+    
+    <script type="text/javascript">
+      
+
+      function drawChart() {
+
+        /*var data = google.visualization.arrayToDataTable([
+          ['Task', 'Hours per Day'],
+          ['Work',     11],
+          ['Eat',      2],
+          ['Commute',  2],
+          ['Watch TV', 2],
+          ['Sleep',    7]
+        ]);
+
+        var options = {
+          title: 'My Daily Activities',
+          is3D: true,
+          slices: {  4: {offset: 0.2},
+                    12: {offset: 0.3},
+                    14: {offset: 0.4},
+                    15: {offset: 0.5},
+          },
+          colors: ['#efefef', '#006eb5'],
+          chartArea:{
+    left:10,
+    right:10, // !!! works !!!
+    bottom:20,  // !!! works !!!
+    top:20,
+    width:"100%",
+    height:"100%"
+  }
+        };
+
+        var chart = new google.visualization.PieChart(document.getElementById('piechart'));
+
+        chart.draw(data, options);*/
+      }
+    </script>
+
+      <link rel="stylesheet" type="text/css" href="toolkit.css">
+      <link rel="stylesheet" type="text/css" href="main.css">
+      <link rel="stylesheet" type="text/css" href="select.css">
+      <!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
 
   </head>
   <body>
-     <!--div donde se dibujara nuestro mapa-->
-<div class="row">
-  <div class="screen_title">
-    <div class="icono_pantalla">
-      <img src="">
-    </div>
-    <div class="titulo">
-      <span class="titulo_pan">Consulta de Informaci&oacute;n</span><br>
-      <span class="sub-titulo">Mapa de Riesgo, Gr&aacute;ficas y
-        Estad&iacute;sticas</span>
-    </div>
-  </div>
-</div>
-
-
+    <!--<div class="center">-->
      
-    <div id="chart_div" style="width: 60%; height: 60%;"></div>
+    <div class="row">
+      <div class="screen_title">
+        <div class="icono_pantalla">
+          <img src="">
+        </div>
+        <div class="titulo">
+          <span class="titulo_pan">Consulta de Informaci&oacute;n</span><br>
+          <span class="sub-titulo">Mapa de Riesgo, Gr&aacute;ficas y
+            Estad&iacute;sticas</span>
+        </div>
+      </div>
+    </div>
+    <div id='col_chart_html_tooltip'></div>
+    
+        
+    <!--<div class="separator"></div><div class="row"> <div class="col-md-3 col-lg-2"> <div class="flecha_combo"> <select ng-model="selectedEstado" ng-options="opt as opt.label for opt in listEstados" ng-change="changeEstado(selectedEstado.label)" name="selEstado" ng-required="true"> <option value="">Seleccione Estado</option> </select> </div> </div> <div class="col-md-2 col-lg-1"></div> <div class="col-md-2 col-lg-1" style="padding-right: 0px;"> <span>Fecha Inicio</span> </div> <div class="col-md-3 col-lg-3"> <div class=" padding-col input-group"> <span class="input-group-addon"> <i class="glyphicon image"></i> </span> <ng-datepicker type="text" id="date1" ng-model="date1" format="dd/mm/yy" /> </div> </div> <div class="col-md-2 col-lg-1" style="padding-right: 0px;"> <span>Fecha Final</span> </div> <div class="col-md-3 col-lg-3"> <div class=" padding-col input-group"> <span class="input-group-addon"> <i class="glyphicon image"></i> </span> <ng-datepicker type="text" id="date2" ng-model="date2" format="dd/mm/yy" actualdate="true" /> </div> </div> <span style="float: right;" class="error txt_error" ng-show="showError"> * La fecha inicio no debe ser mayor a la final.</span> </div>--> 
+    <div class="separator"></div>
+
+    <div class="row">
+        <div class="col-lg-8">
+          <div id="chart_div" style="width: 100%; height: 90%;"></div>
+        </div>
+        <div class="col-lg-4">          
+          <div id="piechart" style="width: 100%; height: 420px;"></div>
+        </div>    
+    </div>
+    
+    
     <div id="table_div"></div>
+  <!--</div>-->
   </body>
 </html>
