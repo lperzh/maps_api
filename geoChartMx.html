@@ -9,12 +9,13 @@
     <script type='text/javascript'>
     //Cargar el API de visualización y el paquete GeoChart.
      google.load('visualization', '1', {'packages': ['geochart']});
+     google.charts.load('current', {'packages':['table']});     
+     google.charts.load('current', {'packages':['corechart']});
+     
      //una devolución de llamada que se ejecutará cuando se carga el API de visualización de Google.
      google.setOnLoadCallback(drawRegionsMap);
 
-     google.charts.load('current', {'packages':['table']});
      
-     google.charts.load('current', {'packages':['corechart']});
      
 
       function drawRegionsMap() {
@@ -296,7 +297,7 @@
 
       function drawChart() {
 
-        /*var data = google.visualization.arrayToDataTable([
+        var data = google.visualization.arrayToDataTable([
           ['Task', 'Hours per Day'],
           ['Work',     11],
           ['Eat',      2],
@@ -326,7 +327,7 @@
 
         var chart = new google.visualization.PieChart(document.getElementById('piechart'));
 
-        chart.draw(data, options);*/
+        chart.draw(data, options);
       }
     </script>
 
